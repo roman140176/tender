@@ -739,6 +739,8 @@ public function run(): void
 
 ---
 
+> **ОБЩЕЕ ПРАВИЛО для Task 7–12 (ревью Task 6):** PostgreSQL НЕ создаёт индекс на FK автоматически. На каждой `foreignId()`-колонке добавлять `->index()` (fluent ДО `->constrained()`), КРОМЕ колонок, являющихся левым префиксом unique/composite-индекса той же таблицы (например `company_id` в `unique(['company_id', 'tender_id'])` отдельного индекса не требует, а `tender_id` из той же пары — требует). Timestamp'ы файлов миграций не должны совпадать.
+
 ### Task 7: SearchProfiles, Keywords, Synonyms
 
 > **Заметки с ревью Task 5:** (1) снять `ignoreErrors: trait.unused` из phpstan.neon — трейт станет используемым; (2) добавить докблок на `BelongsToCompany::withoutTenancy()`: «отключает только read-scope; creating-автозаполнение продолжает работать»; (3) при снятии skip убедиться, что тест автозаполнения проверяет именно контекст (явный `company_id => null` перекрывает фабричный дефолт — ок).
