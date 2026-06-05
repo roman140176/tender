@@ -39,19 +39,19 @@ const showingNavigationDropdown = ref(false);
                                 >
                                     Дашборд
                                 </NavLink>
-                                <!-- Раскомментировать по мере появления маршрутов (A2 T5/T8/T9):
                                 <template v-if="$page.props.auth.can.manageCompany">
-                                    <NavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
-                                        Направления
-                                    </NavLink>
-                                    <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
-                                        Источники
-                                    </NavLink>
-                                    <NavLink :href="route('company.edit')" :active="route().current('company.*')">
-                                        Компания
-                                    </NavLink>
-                                </template>
+                                <NavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
+                                    Направления
+                                </NavLink>
+                                <!-- Раскомментировать при появлении маршрутов (A2 T8/T9):
+                                <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
+                                    Источники
+                                </NavLink>
+                                <NavLink :href="route('company.edit')" :active="route().current('company.*')">
+                                    Компания
+                                </NavLink>
                                 -->
+                            </template>
                             </div>
                         </div>
 
@@ -159,19 +159,19 @@ const showingNavigationDropdown = ref(false);
                         >
                             Дашборд
                         </ResponsiveNavLink>
-                        <!-- Раскомментировать по мере появления маршрутов (A2 T5/T8/T9):
                         <template v-if="$page.props.auth.can.manageCompany">
                             <ResponsiveNavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
                                 Направления
                             </ResponsiveNavLink>
+                            <!-- Раскомментировать при появлении маршрутов (A2 T8/T9):
                             <ResponsiveNavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                 Источники
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
                                 Компания
                             </ResponsiveNavLink>
+                            -->
                         </template>
-                        -->
                     </div>
 
                     <!-- Responsive Settings Options -->

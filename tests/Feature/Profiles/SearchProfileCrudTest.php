@@ -2,20 +2,9 @@
 
 use App\Enums\UserRole;
 use App\Models\Company;
-use App\Models\Plan;
 use App\Models\SearchProfile;
-use App\Models\Subscription;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia;
-
-function adminWithPlan(int $maxProfiles = 3): User
-{
-    $company = Company::factory()->create();
-    $plan = Plan::factory()->create(['max_search_profiles' => $maxProfiles]);
-    Subscription::factory()->for($company)->create(['plan_id' => $plan->id]);
-
-    return User::factory()->for($company)->create(['role' => UserRole::Admin]);
-}
 
 it('админ создаёт направление', function () {
     $admin = adminWithPlan();
