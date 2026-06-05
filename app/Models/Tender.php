@@ -51,7 +51,7 @@ class Tender extends Model
     }
 
     /** @return HasMany<TenderChange, $this> */
-    public function changes(): HasMany
+    public function changeLogs(): HasMany
     {
         return $this->hasMany(TenderChange::class);
     }

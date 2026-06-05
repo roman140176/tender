@@ -16,14 +16,14 @@ it('пишет лог сбора и diff изменений закупки', fun
         'started_at' => now(),
     ]);
 
-    $tender->changes()->create([
+    $tender->changeLogs()->create([
         'source_collect_run_id' => $run->id,
         'field' => 'price',
         'old_value' => '100000.00',
         'new_value' => '120000.00',
     ]);
 
-    expect($tender->changes)->toHaveCount(1)
+    expect($tender->changeLogs)->toHaveCount(1)
         ->and($run->trigger)->toBe(RunTrigger::Manual);
 });
 

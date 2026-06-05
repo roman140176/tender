@@ -20,13 +20,14 @@ return new class extends Migration
 
         Schema::create('tender_attachments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tender_id')->index()->constrained()->cascadeOnDelete();
+            $table->foreignId('tender_id')->constrained()->cascadeOnDelete();
             $table->string('title');
             $table->string('url', 2048);
             $table->string('file_type')->nullable();
             $table->string('local_path')->nullable();
             $table->text('parsed_text')->nullable();
             $table->timestamp('created_at');
+            $table->unique(['tender_id', 'url']);
         });
     }
 

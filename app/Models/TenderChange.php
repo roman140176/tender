@@ -26,4 +26,10 @@ class TenderChange extends Model
     {
         return $this->belongsTo(Tender::class);
     }
+
+    /** @return BelongsTo<SourceCollectRun, $this> */
+    public function sourceCollectRun(): BelongsTo
+    {
+        return $this->belongsTo(SourceCollectRun::class);
+    }
 }
