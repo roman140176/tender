@@ -741,6 +741,8 @@ public function run(): void
 
 ### Task 7: SearchProfiles, Keywords, Synonyms
 
+> **Заметки с ревью Task 5:** (1) снять `ignoreErrors: trait.unused` из phpstan.neon — трейт станет используемым; (2) добавить докблок на `BelongsToCompany::withoutTenancy()`: «отключает только read-scope; creating-автозаполнение продолжает работать»; (3) при снятии skip убедиться, что тест автозаполнения проверяет именно контекст (явный `company_id => null` перекрывает фабричный дефолт — ок).
+
 **Files:**
 - Create: миграция `*_create_search_tables.php`; модели `SearchProfile.php`, `Keyword.php`, `Synonym.php`; фабрики `SearchProfileFactory.php`, `KeywordFactory.php`
 - Modify: `tests/Feature/Tenancy/BelongsToCompanyTest.php` (снять skip)
@@ -1443,6 +1445,8 @@ class TenderAttachment extends Model
 
 ### Task 11: CompanyTenders, TenderMatches, комментарии, история статусов
 
+> **Заметки с ревью Task 5 (КРИТИЧНО для A4-матчера):** `Model::insert()/upsert()/mass update()` обходят и global scope, и creating-хук BelongsToCompany — в этих вызовах `company_id` ВСЕГДА передавать явно. Тест «джоб компании А не видит Б» обязан выставлять контекст на границе джоба явно (`set(null)` или company джоба): sync-очередь в тестах НЕ сбрасывает scoped-инстансы, иначе тест проверяет харнесс, а не изоляцию.
+
 **Files:**
 - Create: миграция `*_create_company_tender_tables.php`; модели `CompanyTender.php`, `TenderMatch.php`, `TenderComment.php`, `TenderStatusHistory.php`; фабрики `CompanyTenderFactory.php`, `TenderMatchFactory.php`
 - Test: `tests/Feature/Models/CompanyTenderTest.php`
@@ -1825,6 +1829,8 @@ class AuditLog extends Model
 ---
 
 ### Task 13: Демо-сидер и auth login-only
+
+> **Заметки с ревью Task 3:** вместе с регистрацией удалить весь verification-флоу (продукт login-only, User не реализует MustVerifyEmail): контроллеры `EmailVerificationPromptController`, `EmailVerificationNotificationController`, `VerifyEmailController`, их маршруты в routes/auth.php, Vue-страницу VerifyEmail и middleware `verified` с маршрута dashboard.
 
 **Files:**
 - Create: `database/seeders/DemoSeeder.php`
