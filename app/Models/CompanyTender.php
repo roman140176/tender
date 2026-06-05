@@ -5,11 +5,13 @@ namespace App\Models;
 use App\Enums\RelevanceLevel;
 use App\Enums\WorkflowStatus;
 use App\Tenancy\BelongsToCompany;
+use App\Tenancy\TenantContext;
 use Database\Factories\CompanyTenderFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use RuntimeException;
 
 class CompanyTender extends Model
 {
@@ -45,13 +47,20 @@ class CompanyTender extends Model
     /**
      * Матчи той же пары (company, tender). Связь только по tender_id —
      * фильтрацию по company_id даёт tenant-scope TenderMatch.
-     * Использовать ТОЛЬКО при установленном TenantContext (никаких $this->attr
-     * внутри relationship — ломает eager loading).
+     * Требует установленного TenantContext — без него бросает RuntimeException.
      *
      * @return HasMany<TenderMatch, $this>
      */
     public function matches(): HasMany
     {
+        if (app(TenantContext::class)->id() === null) {
+            throw new RuntimeException(
+                'CompanyTender::matches() требует установленного TenantContext: '
+                .'без него tenant-scope TenderMatch неактивен и связь вернёт матчи всех компаний. '
+                .'В джобах используйте явный запрос TenderMatch::where(company_id, ...) или установите контекст.',
+            );
+        }
+
         return $this->hasMany(TenderMatch::class, 'tender_id', 'tender_id');
     }
 }
