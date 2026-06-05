@@ -33,6 +33,9 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'can' => [
+                    'manageCompany' => (bool) $request->user()?->can('manage-company'),
+                ],
             ],
         ];
     }

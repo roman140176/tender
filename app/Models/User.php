@@ -11,6 +11,10 @@ use Illuminate\Notifications\Notifiable;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+/**
+ * @property UserRole $role
+ * @property int|null $company_id
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
