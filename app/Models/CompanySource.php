@@ -17,13 +17,22 @@ class CompanySource extends Model
 
     protected $guarded = ['id'];
 
+    protected $hidden = ['config'];
+
+    protected $appends = ['has_config'];
+
     /**
      * config шифруется (рандомизированный IV): НИКОГДА не использовать
      * в WHERE/JOIN/INDEX — только читать у конкретной записи.
      */
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'config' => 'encrypted'];
+        return ['is_active' => 'boolean', 'config' => 'encrypted:array'];
+    }
+
+    public function getHasConfigAttribute(): bool
+    {
+        return $this->getRawOriginal('config') !== null;
     }
 
     /** @return BelongsTo<Source, $this> */

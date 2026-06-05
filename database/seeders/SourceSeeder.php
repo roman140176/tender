@@ -25,7 +25,10 @@ class SourceSeeder extends Seeder
                 'adapter_class' => null,
             ],
         ] as $source) {
-            Source::updateOrCreate(['code' => $source['code']], $source);
+            Source::updateOrCreate(
+                ['code' => $source['code']],
+                array_diff_key($source, array_flip(['adapter_class', 'schedule_cron'])),
+            );
         }
     }
 }

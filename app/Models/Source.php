@@ -6,6 +6,7 @@ use App\Enums\SourceConnectionType;
 use Database\Factories\SourceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Source extends Model
 {
@@ -22,5 +23,11 @@ class Source extends Model
             'default_config' => 'array',
             'last_collected_at' => 'datetime',
         ];
+    }
+
+    /** @return HasMany<CompanySource, $this> */
+    public function companySources(): HasMany
+    {
+        return $this->hasMany(CompanySource::class);
     }
 }
