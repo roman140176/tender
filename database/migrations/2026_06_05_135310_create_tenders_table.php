@@ -40,6 +40,7 @@ return new class extends Migration
 
             $table->unique(['source_id', 'external_id']);
             $table->index('source_url');
+            $table->index('updated_at');
         });
 
         DB::statement(<<<'SQL'
