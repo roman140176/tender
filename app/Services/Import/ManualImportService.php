@@ -19,6 +19,8 @@ class ManualImportService
 
     public function import(UploadedFile $file, Company $company): SourceCollectRun
     {
+        set_time_limit(300); // синхронный импорт до 5000 строк может не уложиться в 30с FPM-дефолта
+
         $source = Source::query()->where('code', 'manual')->firstOrFail();
 
         $run = SourceCollectRun::create([
