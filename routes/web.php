@@ -1,6 +1,10 @@
 <?php
 
+use App\Http\Controllers\CompanySettingsController;
+use App\Http\Controllers\CompanySourceController;
+use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SearchProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -16,6 +20,20 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+Route::middleware(['auth', 'can:manage-company'])->group(function () {
+    Route::resource('profiles', SearchProfileController::class)
+        ->except(['show'])
+        ->parameters(['profiles' => 'profile']);
+    Route::post('profiles/{profile}/keywords', [KeywordController::class, 'store'])->name('profiles.keywords.store');
+    Route::delete('keywords/{keyword}', [KeywordController::class, 'destroy'])->name('keywords.destroy');
+    Route::post('profiles/{profile}/activate', [SearchProfileController::class, 'activate'])->name('profiles.activate');
+    Route::post('profiles/{profile}/deactivate', [SearchProfileController::class, 'deactivate'])->name('profiles.deactivate');
+    Route::get('sources', [CompanySourceController::class, 'index'])->name('sources.index');
+    Route::patch('sources/{source}', [CompanySourceController::class, 'update'])->name('sources.update');
+    Route::get('company', [CompanySettingsController::class, 'edit'])->name('company.edit');
+    Route::patch('company', [CompanySettingsController::class, 'update'])->name('company.update');
 });
 
 require __DIR__.'/auth.php';

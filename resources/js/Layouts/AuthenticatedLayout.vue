@@ -1,13 +1,28 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, watch } from 'vue';
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
 import Dropdown from '@/Components/Dropdown.vue';
 import DropdownLink from '@/Components/DropdownLink.vue';
 import NavLink from '@/Components/NavLink.vue';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 
 const showingNavigationDropdown = ref(false);
+
+const page = usePage();
+const flashVisible = ref(false);
+const flash = computed(() => page.props.flash ?? {});
+
+watch(
+    () => [flash.value.success, flash.value.error],
+    ([success, error]) => {
+        if (success || error) {
+            flashVisible.value = true;
+            setTimeout(() => (flashVisible.value = false), 4000);
+        }
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
@@ -37,8 +52,19 @@ const showingNavigationDropdown = ref(false);
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
-                                    Dashboard
+                                    Дашборд
                                 </NavLink>
+                                <template v-if="$page.props.auth.can.manageCompany">
+                                <NavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
+                                    Направления
+                                </NavLink>
+                                <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
+                                    Источники
+                                </NavLink>
+                                <NavLink :href="route('company.edit')" :active="route().current('company.*')">
+                                    Компания
+                                </NavLink>
+                            </template>
                             </div>
                         </div>
 
@@ -74,14 +100,14 @@ const showingNavigationDropdown = ref(false);
                                         <DropdownLink
                                             :href="route('profile.edit')"
                                         >
-                                            Profile
+                                            Профиль
                                         </DropdownLink>
                                         <DropdownLink
                                             :href="route('logout')"
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Выйти
                                         </DropdownLink>
                                     </template>
                                 </Dropdown>
@@ -144,8 +170,19 @@ const showingNavigationDropdown = ref(false);
                             :href="route('dashboard')"
                             :active="route().current('dashboard')"
                         >
-                            Dashboard
+                            Дашборд
                         </ResponsiveNavLink>
+                        <template v-if="$page.props.auth.can.manageCompany">
+                            <ResponsiveNavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
+                                Направления
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('sources.index')" :active="route().current('sources.*')">
+                                Источники
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
+                                Компания
+                            </ResponsiveNavLink>
+                        </template>
                     </div>
 
                     <!-- Responsive Settings Options -->
@@ -165,14 +202,14 @@ const showingNavigationDropdown = ref(false);
 
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('profile.edit')">
-                                Profile
+                                Профиль
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('logout')"
                                 method="post"
                                 as="button"
                             >
-                                Log Out
+                                Выйти
                             </ResponsiveNavLink>
                         </div>
                     </div>
@@ -188,6 +225,24 @@ const showingNavigationDropdown = ref(false);
                     <slot name="header" />
                 </div>
             </header>
+
+            <!-- Flash Banner -->
+            <Transition
+                enter-active-class="transition ease-out duration-200"
+                enter-from-class="opacity-0 -translate-y-1"
+                leave-active-class="transition ease-in duration-200"
+                leave-to-class="opacity-0"
+            >
+                <div v-if="flashVisible && (flash.success || flash.error)" class="mx-auto mt-4 max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div
+                        :class="flash.error ? 'bg-red-50 text-red-800' : 'bg-green-50 text-green-800'"
+                        class="rounded-md p-3 text-sm shadow-sm"
+                        role="status"
+                    >
+                        {{ flash.error ?? flash.success }}
+                    </div>
+                </div>
+            </Transition>
 
             <!-- Page Content -->
             <main>

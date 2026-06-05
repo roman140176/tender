@@ -7,6 +7,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -21,7 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
             SetTenantContext::class,
         ]);
 
-        //
+        // Ensure tenant context is resolved after auth but before implicit model binding,
+        // so that BelongsToCompany global scope filters foreign records to 404.
+        $middleware->prependToPriorityList(
+            SubstituteBindings::class,
+            SetTenantContext::class,
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
