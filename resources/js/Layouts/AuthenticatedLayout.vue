@@ -37,8 +37,21 @@ const showingNavigationDropdown = ref(false);
                                     :href="route('dashboard')"
                                     :active="route().current('dashboard')"
                                 >
-                                    Dashboard
+                                    Дашборд
                                 </NavLink>
+                                <!-- Раскомментировать по мере появления маршрутов (A2 T5/T8/T9):
+                                <template v-if="$page.props.auth.can.manageCompany">
+                                    <NavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
+                                        Направления
+                                    </NavLink>
+                                    <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
+                                        Источники
+                                    </NavLink>
+                                    <NavLink :href="route('company.edit')" :active="route().current('company.*')">
+                                        Компания
+                                    </NavLink>
+                                </template>
+                                -->
                             </div>
                         </div>
 
@@ -74,14 +87,14 @@ const showingNavigationDropdown = ref(false);
                                         <DropdownLink
                                             :href="route('profile.edit')"
                                         >
-                                            Profile
+                                            Профиль
                                         </DropdownLink>
                                         <DropdownLink
                                             :href="route('logout')"
                                             method="post"
                                             as="button"
                                         >
-                                            Log Out
+                                            Выйти
                                         </DropdownLink>
                                     </template>
                                 </Dropdown>
@@ -144,8 +157,21 @@ const showingNavigationDropdown = ref(false);
                             :href="route('dashboard')"
                             :active="route().current('dashboard')"
                         >
-                            Dashboard
+                            Дашборд
                         </ResponsiveNavLink>
+                        <!-- Раскомментировать по мере появления маршрутов (A2 T5/T8/T9):
+                        <template v-if="$page.props.auth.can.manageCompany">
+                            <ResponsiveNavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
+                                Направления
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('sources.index')" :active="route().current('sources.*')">
+                                Источники
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
+                                Компания
+                            </ResponsiveNavLink>
+                        </template>
+                        -->
                     </div>
 
                     <!-- Responsive Settings Options -->
@@ -165,14 +191,14 @@ const showingNavigationDropdown = ref(false);
 
                         <div class="mt-3 space-y-1">
                             <ResponsiveNavLink :href="route('profile.edit')">
-                                Profile
+                                Профиль
                             </ResponsiveNavLink>
                             <ResponsiveNavLink
                                 :href="route('logout')"
                                 method="post"
                                 as="button"
                             >
-                                Log Out
+                                Выйти
                             </ResponsiveNavLink>
                         </div>
                     </div>
