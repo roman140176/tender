@@ -39,10 +39,20 @@ it('загрузка CSV создаёт закупки и ран', function () {
     $this->actingAs($admin)
         ->post(route('imports.store'), ['file' => $file])
         ->assertRedirect(route('imports.index', absolute: false))
-        ->assertSessionHas('success');
+        ->assertSessionHas('error');
 
     expect(Tender::count())->toBe(2)
         ->and(SourceCollectRun::where('company_id', $admin->company_id)->count())->toBe(1);
+});
+
+it('импорт без ошибок флашит success', function () {
+    $admin = adminWithPlan();
+    $clean = UploadedFile::fake()->createWithContent('clean.csv',
+        "Название;Цена;Закон\nПоставка щебня;500000;44-ФЗ\n");
+
+    $this->actingAs($admin)
+        ->post(route('imports.store'), ['file' => $clean])
+        ->assertSessionHas('success');
 });
 
 it('отклоняет неподдерживаемый формат и большой файл', function () {

@@ -42,7 +42,7 @@ class ImportController extends Controller
 
         $message = "Импорт завершён: новых {$run->new_count}, обновлено {$run->updated_count}, ошибок {$run->error_count}.";
 
-        return redirect()->route('imports.index')->with('success', $message);
+        return redirect()->route('imports.index')->with($run->error_count > 0 ? 'error' : 'success', $message);
     }
 
     public function template(): StreamedResponse

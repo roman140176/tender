@@ -90,7 +90,7 @@ class Normalizer
         // Сравниваем back-format, чтобы отсечь частичные совпадения.
         foreach (config('import.date_formats') as $format) {
             try {
-                $parsed = CarbonImmutable::createFromFormat($format, $value);
+                $parsed = CarbonImmutable::createFromFormat('!'.$format, $value);
                 if ($parsed->format($format) === $value) {
                     return $parsed;
                 }

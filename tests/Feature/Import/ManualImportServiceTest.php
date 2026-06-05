@@ -5,6 +5,7 @@ use App\Enums\RunTrigger;
 use App\Models\Company;
 use App\Models\SourceCollectRun;
 use App\Models\Tender;
+use App\Models\TenderChange;
 use App\Services\Import\ManualImportService;
 use Database\Seeders\SourceSeeder;
 use Illuminate\Http\UploadedFile;
@@ -77,6 +78,21 @@ it('импортирует XLSX', function () {
     );
 
     expect($run->new_count)->toBe(2)->and(Tender::count())->toBe(2);
+});
+
+it('повторный импорт через границу суток не даёт ложных updated', function () {
+    $company = Company::factory()->create();
+    $file = fn () => new UploadedFile(base_path('tests/Fixtures/import.csv'), 'import.csv', 'text/csv', test: true);
+
+    $this->travelTo(now()->setTime(9, 0));
+    app(ManualImportService::class)->import($file(), $company);
+
+    $this->travelTo(now()->addDay()->setTime(17, 42));
+    $run2 = app(ManualImportService::class)->import($file(), $company);
+
+    expect($run2->new_count)->toBe(0)
+        ->and($run2->updated_count)->toBe(0)
+        ->and(TenderChange::count())->toBe(0);
 });
 
 it('ран фиксируется даже при пустом файле', function () {

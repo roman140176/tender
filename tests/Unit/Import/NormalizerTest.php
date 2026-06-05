@@ -27,6 +27,7 @@ it('нормализует полную строку с русскими зна�
         ->and($n->lawType)->toBe(LawType::Fz44)
         ->and($n->sourceStatus)->toBe(TenderSourceStatus::Active)
         ->and($n->publishedAt?->format('Y-m-d'))->toBe('2026-06-01')
+        ->and($n->publishedAt?->format('H:i:s'))->toBe('00:00:00')
         ->and($n->deadlineAt?->format('Y-m-d H:i'))->toBe('2026-06-20 10:00')
         ->and($n->okpd2)->toBe(['25.11', '25.11.23'])
         ->and($n->contentHash)->toHaveLength(64);
