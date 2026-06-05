@@ -61,6 +61,9 @@ watch(
                                 <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                     Источники
                                 </NavLink>
+                                <NavLink :href="route('imports.index')" :active="route().current('imports.*')">
+                                    Импорт
+                                </NavLink>
                                 <NavLink :href="route('company.edit')" :active="route().current('company.*')">
                                     Компания
                                 </NavLink>
@@ -178,6 +181,9 @@ watch(
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                 Источники
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('imports.index')" :active="route().current('imports.*')">
+                                Импорт
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
                                 Компания
