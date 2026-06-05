@@ -8,6 +8,7 @@ use Database\Factories\TenderFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tender extends Model
 {
@@ -41,5 +42,17 @@ class Tender extends Model
     public function source(): BelongsTo
     {
         return $this->belongsTo(Source::class);
+    }
+
+    /** @return HasMany<TenderAttachment, $this> */
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(TenderAttachment::class);
+    }
+
+    /** @return HasMany<TenderChange, $this> */
+    public function changes(): HasMany
+    {
+        return $this->hasMany(TenderChange::class);
     }
 }
