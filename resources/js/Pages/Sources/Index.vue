@@ -41,6 +41,7 @@ const toggle = (source) => {
                             type="button"
                             role="switch"
                             :aria-checked="source.enabled"
+                            :aria-label="`${source.enabled ? 'Выключить' : 'Включить'} источник «${source.name}»`"
                             :class="source.enabled ? 'bg-indigo-600' : 'bg-gray-200'"
                             class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
                             @click="toggle(source)"
