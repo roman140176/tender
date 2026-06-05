@@ -15,7 +15,7 @@ it('скрывает чужие записи при установленном �
 
     app(TenantContext::class)->set(null);
     expect(SearchProfile::query()->count())->toBe(2);
-})->skip('ждёт Task 7: модель SearchProfile');
+});
 
 it('автозаполняет company_id из контекста при создании', function () {
     $a = Company::factory()->create();
@@ -23,4 +23,4 @@ it('автозаполняет company_id из контекста при соз�
 
     $profile = SearchProfile::factory()->create(['company_id' => null]);
     expect($profile->company_id)->toBe($a->id);
-})->skip('ждёт Task 7: модель SearchProfile');
+});

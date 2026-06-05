@@ -23,6 +23,11 @@ trait BelongsToCompany
         });
     }
 
+    /**
+     * Отключает только read-scope тенанта; creating-автозаполнение company_id продолжает работать.
+     *
+     * @return Builder<static>
+     */
     public static function withoutTenancy(): Builder
     {
         return static::query()->withoutGlobalScope('company');
