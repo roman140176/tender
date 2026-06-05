@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CompanySourceController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchProfileController;
@@ -28,6 +29,8 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
     Route::delete('keywords/{keyword}', [KeywordController::class, 'destroy'])->name('keywords.destroy');
     Route::post('profiles/{profile}/activate', [SearchProfileController::class, 'activate'])->name('profiles.activate');
     Route::post('profiles/{profile}/deactivate', [SearchProfileController::class, 'deactivate'])->name('profiles.deactivate');
+    Route::get('sources', [CompanySourceController::class, 'index'])->name('sources.index');
+    Route::patch('sources/{source}', [CompanySourceController::class, 'update'])->name('sources.update');
 });
 
 require __DIR__.'/auth.php';

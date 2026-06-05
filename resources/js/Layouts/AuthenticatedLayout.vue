@@ -43,10 +43,10 @@ const showingNavigationDropdown = ref(false);
                                 <NavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
                                     Направления
                                 </NavLink>
-                                <!-- Раскомментировать при появлении маршрутов (A2 T8/T9):
                                 <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                     Источники
                                 </NavLink>
+                                <!-- Раскомментировать при появлении маршрута company.edit (A2 T9):
                                 <NavLink :href="route('company.edit')" :active="route().current('company.*')">
                                     Компания
                                 </NavLink>
@@ -163,10 +163,10 @@ const showingNavigationDropdown = ref(false);
                             <ResponsiveNavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
                                 Направления
                             </ResponsiveNavLink>
-                            <!-- Раскомментировать при появлении маршрутов (A2 T8/T9):
                             <ResponsiveNavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                 Источники
                             </ResponsiveNavLink>
+                            <!-- Раскомментировать при появлении маршрута company.edit (A2 T9):
                             <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
                                 Компания
                             </ResponsiveNavLink>
