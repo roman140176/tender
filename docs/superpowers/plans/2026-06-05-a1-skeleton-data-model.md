@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Рабочий каркас Laravel 12 (Inertia + Vue 3) с полной финальной схемой БД из спеки §5, tenant-изоляцией, auth (login-only), сидерами и CI.
+**Goal:** Рабочий каркас Laravel 13 (Inertia + Vue 3) с полной финальной схемой БД из спеки §5, tenant-изоляцией, auth (login-only), сидерами и CI.
+
+> **Факт исполнения (T1):** установлен Laravel 13.14 + Breeze 2.4.2 (актуальный мажор; план писался под «12»). Redis-клиент — predis (ext-redis на хосте нет). Все команды PHP — строго через бинарь `php8.3` (дефолтный `php` на хосте — 7.3!).
 
 **Architecture:** Монолит Laravel; PostgreSQL 16 + Redis в docker для dev; вся схема БД накатывается сразу (решение спеки «миграции — финальная схема, без партиций»); tenant-изоляция через `TenantContext`-синглтон + global scope, работающая и в HTTP, и в джобах.
 
-**Tech Stack:** PHP 8.3, Laravel 12, Inertia.js + Vue 3 + Tailwind, PostgreSQL 16 (jsonb, tsvector, pg_trgm), Redis 7, Pest, Pint, Larastan, GitHub Actions.
+**Tech Stack:** PHP 8.3, Laravel 13, Inertia.js + Vue 3 + Tailwind, PostgreSQL 16 (jsonb, tsvector, pg_trgm), Redis 7 (predis), Pest, Pint, Larastan, GitHub Actions.
 
 **Спека:** `docs/superpowers/specs/2026-06-05-tender-radar-design.md` (раздел 5 — схема, раздел 7.3 — scoring_weights, раздел 11 — изоляция).
 
@@ -737,7 +739,11 @@ public function run(): void
 
 ---
 
+> **ОБЩЕЕ ПРАВИЛО для Task 7–12 (ревью Task 6):** PostgreSQL НЕ создаёт индекс на FK автоматически. На каждой `foreignId()`-колонке добавлять `->index()` (fluent ДО `->constrained()`), КРОМЕ колонок, являющихся левым префиксом unique/composite-индекса той же таблицы (например `company_id` в `unique(['company_id', 'tender_id'])` отдельного индекса не требует, а `tender_id` из той же пары — требует). Timestamp'ы файлов миграций не должны совпадать.
+
 ### Task 7: SearchProfiles, Keywords, Synonyms
+
+> **Заметки с ревью Task 5:** (1) снять `ignoreErrors: trait.unused` из phpstan.neon — трейт станет используемым; (2) добавить докблок на `BelongsToCompany::withoutTenancy()`: «отключает только read-scope; creating-автозаполнение продолжает работать»; (3) при снятии skip убедиться, что тест автозаполнения проверяет именно контекст (явный `company_id => null` перекрывает фабричный дефолт — ок).
 
 **Files:**
 - Create: миграция `*_create_search_tables.php`; модели `SearchProfile.php`, `Keyword.php`, `Synonym.php`; фабрики `SearchProfileFactory.php`, `KeywordFactory.php`
@@ -1441,6 +1447,8 @@ class TenderAttachment extends Model
 
 ### Task 11: CompanyTenders, TenderMatches, комментарии, история статусов
 
+> **Заметки с ревью Task 5 (КРИТИЧНО для A4-матчера):** `Model::insert()/upsert()/mass update()` обходят и global scope, и creating-хук BelongsToCompany — в этих вызовах `company_id` ВСЕГДА передавать явно. Тест «джоб компании А не видит Б» обязан выставлять контекст на границе джоба явно (`set(null)` или company джоба): sync-очередь в тестах НЕ сбрасывает scoped-инстансы, иначе тест проверяет харнесс, а не изоляцию.
+
 **Files:**
 - Create: миграция `*_create_company_tender_tables.php`; модели `CompanyTender.php`, `TenderMatch.php`, `TenderComment.php`, `TenderStatusHistory.php`; фабрики `CompanyTenderFactory.php`, `TenderMatchFactory.php`
 - Test: `tests/Feature/Models/CompanyTenderTest.php`
@@ -1823,6 +1831,8 @@ class AuditLog extends Model
 ---
 
 ### Task 13: Демо-сидер и auth login-only
+
+> **Заметки с ревью Task 3:** вместе с регистрацией удалить весь verification-флоу (продукт login-only, User не реализует MustVerifyEmail): контроллеры `EmailVerificationPromptController`, `EmailVerificationNotificationController`, `VerifyEmailController`, их маршруты в routes/auth.php, Vue-страницу VerifyEmail и middleware `verified` с маршрута dashboard.
 
 **Files:**
 - Create: `database/seeders/DemoSeeder.php`

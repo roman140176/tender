@@ -17,7 +17,7 @@
 | # | Решение | Отступление от ТЗ | Причина |
 |---|---------|-------------------|---------|
 | Р1 | Коммерческий SaaS, мультитенантность с первого дня | ТЗ неявно | Подтверждено владельцем 2026-06-05 |
-| Р2 | Стек Laravel 12 / PHP 8.3, Inertia + Vue 3, PostgreSQL 16, Redis | ТЗ рекомендует Node/NestJS/Next | Экспертиза и инфраструктура владельца; нативный SOAP/XMLReader для ЕИС; стек ТЗ — рекомендация, не требование (16.1) |
+| Р2 | Стек Laravel 13 / PHP 8.3, Inertia + Vue 3, PostgreSQL 16, Redis (predis) | ТЗ рекомендует Node/NestJS/Next | Экспертиза и инфраструктура владельца; нативный SOAP/XMLReader для ЕИС; стек ТЗ — рекомендация, не требование (16.1). Laravel 13 — актуальный мажор на момент старта (июнь 2026) |
 | Р3 | 3 легальных адаптера вместо 8 парсеров: ЕИС + платный агрегатор (этап B+) + ручной импорт | ТЗ требует 8 источников первой очереди | У 5 ЭТП нет публичных API; парсинг упирается в антибот-защиты, обход которых ТЗ запрещает (7.4, 24); контент покрывается ЕИС и агрегаторами. Критерий 27.6 допускает «адаптерную архитектуру» |
 | Р4 | Сбор глобальный, матчинг per-company | В ТЗ не определено | ЕИС ~10–15 тыс. извещений/день: качаем один раз для всех, иначе N×M-взрыв нагрузки и стоимости AI |
 | Р5 | Глобальный `tenders` + per-company проекция `company_tenders` | Модель 19.6 ТЗ кладёт per-company поля на глобальный Tender | Иначе компании затирают данные друг друга; релевантность живёт только в `tender_matches` |
@@ -34,7 +34,7 @@
 
 ## 3. Стек
 
-- **Backend:** PHP 8.3, Laravel 12, Horizon (очереди на Redis), Scheduler (как диспетчер, см. §14-планировщик).
+- **Backend:** PHP 8.3, Laravel 13, Horizon (очереди на Redis, клиент predis), Scheduler (как диспетчер, см. §14-планировщик).
 - **Frontend:** Inertia.js + Vue 3 + Tailwind CSS (кабинет и админка — одно приложение, роли разводят доступ).
 - **БД:** PostgreSQL 16; FTS `russian` + расширение `pg_trgm` (точные фразы/аббревиатуры). Meilisearch — отложен (ТЗ 16.1 относит во «вторую версию»).
 - **Файлы:** локальный диск (dev) / S3-совместимое хранилище в РФ (prod) через Laravel Filesystem; временная область на диске для распаковки архивов ЕИС.
@@ -105,8 +105,8 @@ Per-company таблицы имеют `company_id`. Тенант-изоляци�
 
 ### Закупки
 
-- **tenders** (глобальная, **без партиционирования** — Р11): id, source_id, external_id, number `nullable`, source_url, title, description `text`, customer_name, customer_inn `nullable`, region, price `decimal nullable`, currency `default 'RUB'`, law_type `enum(fz44, fz223, commercial, other)`, procedure_type `nullable`, source_status `enum(active, completed, cancelled, unknown)` (`unknown` трактуется везде как `active`), published_at, deadline_at `nullable`, okpd2 `jsonb`, ktru `jsonb`, extra `jsonb`, content_hash, owner_company_id `nullable` (NOT NULL для `source=manual` — Р13), search_vector `tsvector` (см. ниже), first_seen_at, last_seen_at, timestamps.
-  Индексы: `unique(source_id, external_id)`, btree(source_url), btree(content_hash), published_at, deadline_at, region, price, law_type, owner_company_id, GIN(search_vector), **GIN trigram(title)** (`pg_trgm`, для exact-фраз/аббревиатур).
+- **tenders** (глобальная, **без партиционирования** — Р11): id, source_id, external_id, number `nullable`, source_url, title, description `text nullable`, customer_name `nullable`, customer_inn `nullable`, region `nullable`, price `decimal nullable`, currency `default 'RUB'`, law_type `enum(fz44, fz223, commercial, other)`, procedure_type `nullable`, source_status `enum(active, completed, cancelled, unknown)` (`unknown` трактуется везде как `active`), published_at `nullable`, deadline_at `nullable`, okpd2 `jsonb`, ktru `jsonb`, extra `jsonb`, content_hash, owner_company_id `nullable` (NOT NULL для `source=manual` — Р13), search_vector `tsvector` (см. ниже), first_seen_at, last_seen_at, timestamps. (Поля источника nullable осознанно: ручной импорт и агрегаторы не гарантируют полноту — заказчик/регион/дата публикации могут отсутствовать, нормализатор не падает.)
+  Индексы: `unique(source_id, external_id)`, btree(source_url), btree(content_hash), published_at, deadline_at, **updated_at** (ключ инкрементального матчинга §4.2 — горячий путь), region, price, law_type, owner_company_id, GIN(search_vector), **GIN trigram(title)** (`pg_trgm`, для exact-фраз/аббревиатур). Composite-индексы под фактический паттерн матчера — по EXPLAIN на наполненной таблице (этап A4).
   `search_vector` — generated-колонка через **raw SQL миграцию** (schema builder её не умеет), колонка `guarded` в модели:
   ```sql
   search_vector tsvector GENERATED ALWAYS AS (
@@ -259,6 +259,8 @@ Saby/СБИС Торги или Контур.Закупки — официаль
   ```
   `aiLevel` — **отдельная** шкала AI (3 значения), на балльный `level` (4 значения) не влияет и отображается рядом; `recommendation` использует тот же enum, что §7.5. AI не меняет детерминированный балл.
 - `ai_summaries.requirements`/`risks` — массивы строк.
+- Инкремент `ai_usage` — атомарным upsert'ом (`DB::raw('calls + 1')`), не read-modify-write: параллельные джобы.
+- Провайдеры по факту (июнь 2026): dev — Ollama локально (`qwen3.5:4b`; на `/v1`-эндпоинте Ollama structured output только через нативный параметр `format` — OpenAI-шный `response_format` игнорируется, драйвер это учитывает); тест/прод — GigaChat freemium (1M токенов/год, Sber ID без карты, OpenAI-совместимость через gpt2giga); резерв — Yandex AI Studio (грант 4000₽/60 дней). Gemini/Mistral/Groq из РФ недоступны (регион / санкции ЕС с 01.2026 / Cloudflare 403).
 - Отложено «по спросу» (после B): черновик письма менеджеру, AI-группировка по направлениям (12.1 ТЗ).
 
 ## 9. Уведомления
