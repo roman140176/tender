@@ -20,6 +20,10 @@ class SearchProfile extends Model
 
     protected $guarded = ['id'];
 
+    /**
+     * ВНИМАНИЕ: cast 'decimal:2' возвращает string — сравнения цен в матчере
+     * делать через bccomp()/приведение, не строковыми операторами.
+     */
     protected function casts(): array
     {
         return [
@@ -55,7 +59,7 @@ class SearchProfile extends Model
     public function canActivate(): bool
     {
         return $this->keywords()
-            ->whereIn('type', [KeywordType::Main, KeywordType::Exact, KeywordType::Broad])
+            ->whereIn('type', KeywordType::positiveCases())
             ->exists();
     }
 }

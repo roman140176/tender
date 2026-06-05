@@ -15,4 +15,10 @@ enum KeywordType: string
     {
         return in_array($this, [self::Main, self::Exact, self::Broad], true);
     }
+
+    /** @return list<self> */
+    public static function positiveCases(): array
+    {
+        return array_values(array_filter(self::cases(), fn (self $case) => $case->isPositive()));
+    }
 }
