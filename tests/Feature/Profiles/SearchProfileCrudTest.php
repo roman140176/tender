@@ -109,6 +109,9 @@ it('flash success доступен Inertia после создания', functio
             'deadline_min_days' => 0, 'notification_threshold' => 60, 'exclude_on_negative_in_title' => false,
         ]);
 
+    // контроллер реально кладёт flash в сессию…
+    $response->assertSessionHas('success', 'Направление создано. Добавьте ключевые слова и активируйте его.');
+
     $profile = SearchProfile::withoutTenancy()->where('name', 'Флеш-тест')->firstOrFail();
 
     $this->actingAs($admin)
