@@ -1,0 +1,25 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: tender, POSTGRES_PASSWORD: secret, POSTGRES_DB: tender_test }
+        ports: ["54320:5432"]
+        options: >-
+          --health-cmd "pg_isready -U tender" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with: { php-version: "8.3", extensions: "pgsql, zip, soap, bcmath, intl" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: composer install --no-interaction --prefer-dist
+      - run: npm ci
+      - run: npm run build
+      - run: cp .env.example .env && php artisan key:generate
+      - run: vendor/bin/pint --test
+      - run: vendor/bin/phpstan analyse --no-progress
+      - run: php artisan test
