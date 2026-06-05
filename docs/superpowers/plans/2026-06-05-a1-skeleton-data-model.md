@@ -2,11 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Рабочий каркас Laravel 12 (Inertia + Vue 3) с полной финальной схемой БД из спеки §5, tenant-изоляцией, auth (login-only), сидерами и CI.
+**Goal:** Рабочий каркас Laravel 13 (Inertia + Vue 3) с полной финальной схемой БД из спеки §5, tenant-изоляцией, auth (login-only), сидерами и CI.
+
+> **Факт исполнения (T1):** установлен Laravel 13.14 + Breeze 2.4.2 (актуальный мажор; план писался под «12»). Redis-клиент — predis (ext-redis на хосте нет). Все команды PHP — строго через бинарь `php8.3` (дефолтный `php` на хосте — 7.3!).
 
 **Architecture:** Монолит Laravel; PostgreSQL 16 + Redis в docker для dev; вся схема БД накатывается сразу (решение спеки «миграции — финальная схема, без партиций»); tenant-изоляция через `TenantContext`-синглтон + global scope, работающая и в HTTP, и в джобах.
 
-**Tech Stack:** PHP 8.3, Laravel 12, Inertia.js + Vue 3 + Tailwind, PostgreSQL 16 (jsonb, tsvector, pg_trgm), Redis 7, Pest, Pint, Larastan, GitHub Actions.
+**Tech Stack:** PHP 8.3, Laravel 13, Inertia.js + Vue 3 + Tailwind, PostgreSQL 16 (jsonb, tsvector, pg_trgm), Redis 7 (predis), Pest, Pint, Larastan, GitHub Actions.
 
 **Спека:** `docs/superpowers/specs/2026-06-05-tender-radar-design.md` (раздел 5 — схема, раздел 7.3 — scoring_weights, раздел 11 — изоляция).
 
