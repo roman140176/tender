@@ -4,6 +4,7 @@ use App\Enums\SubscriptionStatus;
 use App\Enums\UserRole;
 use App\Models\Company;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Database\Seeders\PlanSeeder;
 
@@ -29,4 +30,15 @@ it('связывает компанию, пользователей и подп�
 it('суперадмин не принадлежит компании', function () {
     $root = User::factory()->superadmin()->create();
     expect($root->company_id)->toBeNull()->and($root->role)->toBe(UserRole::Superadmin);
+});
+
+it('каскадно удаляет пользователей и подписки вместе с компанией', function () {
+    $company = Company::factory()->create();
+    User::factory()->for($company)->create();
+    Subscription::factory()->for($company)->create();
+
+    $company->delete();
+
+    expect(User::count())->toBe(0)
+        ->and(Subscription::count())->toBe(0);
 });

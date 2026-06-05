@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\SubscriptionStatus;
 use Database\Factories\CompanyFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -40,7 +41,7 @@ class Company extends Model
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()
-            ->whereIn('status', ['trial', 'active'])
+            ->whereIn('status', [SubscriptionStatus::Trial, SubscriptionStatus::Active])
             ->latest('started_at')
             ->first();
     }

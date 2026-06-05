@@ -28,8 +28,8 @@ return new class extends Migration
 
         Schema::create('subscriptions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('company_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('plan_id')->constrained();
+            $table->foreignId('company_id')->index()->constrained()->cascadeOnDelete();
+            $table->foreignId('plan_id')->index()->constrained();
             $table->string('status')->default('trial');
             $table->timestamp('started_at');
             $table->timestamp('expires_at')->nullable();
