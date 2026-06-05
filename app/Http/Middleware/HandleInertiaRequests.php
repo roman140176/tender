@@ -37,6 +37,10 @@ class HandleInertiaRequests extends Middleware
                     'manageCompany' => (bool) $request->user()?->can('manage-company'),
                 ],
             ],
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error' => fn () => $request->session()->get('error'),
+            ],
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Models\Plan;
 use App\Models\SearchProfile;
 use App\Models\Subscription;
 use App\Models\User;
+use Inertia\Testing\AssertableInertia;
 
 function adminWithPlan(int $maxProfiles = 3): User
 {
@@ -97,6 +98,24 @@ it('обновление и удаление своего направления
 
     $this->actingAs($admin)->delete(route('profiles.destroy', $profile))->assertRedirect(route('profiles.index', absolute: false));
     expect(SearchProfile::withoutTenancy()->find($profile->id))->toBeNull();
+});
+
+it('flash success доступен Inertia после создания', function () {
+    $admin = adminWithPlan();
+
+    $response = $this->actingAs($admin)
+        ->post(route('profiles.store'), [
+            'name' => 'Флеш-тест', 'law_types' => [], 'regions' => [], 'excluded_regions' => [], 'okpd2_codes' => [],
+            'deadline_min_days' => 0, 'notification_threshold' => 60, 'exclude_on_negative_in_title' => false,
+        ]);
+
+    $profile = SearchProfile::withoutTenancy()->where('name', 'Флеш-тест')->firstOrFail();
+
+    $this->actingAs($admin)
+        ->withSession(['success' => 'Направление создано. Добавьте ключевые слова и активируйте его.'])
+        ->get(route('profiles.edit', $profile))
+        ->assertInertia(fn (AssertableInertia $page) => $page
+            ->where('flash.success', 'Направление создано. Добавьте ключевые слова и активируйте его.'));
 });
 
 it('валидация: max_price не меньше min_price, порог 0-100', function () {
