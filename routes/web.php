@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CompanySourceController;
+use App\Http\Controllers\ImportController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchProfileController;
@@ -34,6 +35,9 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
     Route::patch('sources/{source}', [CompanySourceController::class, 'update'])->name('sources.update');
     Route::get('company', [CompanySettingsController::class, 'edit'])->name('company.edit');
     Route::patch('company', [CompanySettingsController::class, 'update'])->name('company.update');
+    Route::get('imports/template', [ImportController::class, 'template'])->name('imports.template');
+    Route::get('imports', [ImportController::class, 'index'])->name('imports.index');
+    Route::post('imports', [ImportController::class, 'store'])->name('imports.store');
 });
 
 require __DIR__.'/auth.php';
