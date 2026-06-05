@@ -46,11 +46,9 @@ const showingNavigationDropdown = ref(false);
                                 <NavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                     Источники
                                 </NavLink>
-                                <!-- Раскомментировать при появлении маршрута company.edit (A2 T9):
                                 <NavLink :href="route('company.edit')" :active="route().current('company.*')">
                                     Компания
                                 </NavLink>
-                                -->
                             </template>
                             </div>
                         </div>
@@ -166,11 +164,9 @@ const showingNavigationDropdown = ref(false);
                             <ResponsiveNavLink :href="route('sources.index')" :active="route().current('sources.*')">
                                 Источники
                             </ResponsiveNavLink>
-                            <!-- Раскомментировать при появлении маршрута company.edit (A2 T9):
                             <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
                                 Компания
                             </ResponsiveNavLink>
-                            -->
                         </template>
                     </div>
 
