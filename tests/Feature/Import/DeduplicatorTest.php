@@ -98,3 +98,32 @@ it('приватность: одинаковая manual-закупка двух 
 
     expect(Tender::count())->toBe(2);
 });
+
+it('уровень 1: тот же номер закупки склеивает при изменившемся url и контенте', function () {
+    $company = Company::factory()->create();
+    $source = manualSource();
+    $dedup = app(Deduplicator::class);
+
+    $dedup->process(normalized(['number' => 'N-100']), $source->id, $company->id);
+    $result = $dedup->process(
+        normalized(['number' => 'N-100', 'source_url' => 'https://example.com/t/OTHER', 'price' => '9 999 999']),
+        $source->id,
+        $company->id,
+    );
+
+    expect($result->status)->toBe('updated')->and(Tender::count())->toBe(1);
+});
+
+it('уровень 2: тот же source_url склеивает при изменившемся контенте (hash и synthetic id другие)', function () {
+    $company = Company::factory()->create();
+    $source = manualSource();
+    $dedup = app(Deduplicator::class);
+
+    $dedup->process(normalized(), $source->id, $company->id);
+    // цена меняется => content_hash И синтетический external_id другие; склейка возможна ТОЛЬКО по url
+    $result = $dedup->process(normalized(['price' => '2 000 000']), $source->id, $company->id);
+
+    expect($result->status)->toBe('updated')
+        ->and(Tender::count())->toBe(1)
+        ->and(Tender::sole()->price)->toBe('2000000.00');
+});

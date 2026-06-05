@@ -17,18 +17,24 @@ class Deduplicator
         'customer_name', 'customer_inn', 'region',
     ];
 
+    /** Кэш результатов isManualSource() во избежание N+1 при пакетной обработке.
+     *
+     * @var array<int, bool>
+     */
+    private array $manualSourceCache = [];
+
     /**
      * Find-or-create по каскаду §6.5. Для manual owner обязателен (Р13).
      */
     public function process(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, ?int $collectRunId = null): DedupResult
     {
-        $externalId = $n->number !== null && $n->number !== ''
-            ? $n->number
-            : $this->syntheticExternalId($n, $ownerCompanyId);
-
         if ($ownerCompanyId === null && $this->isManualSource($sourceId)) {
             throw new InvalidArgumentException('manual-источник требует owner_company_id (Р13).');
         }
+
+        $externalId = $n->number !== null && $n->number !== ''
+            ? $n->number
+            : $this->syntheticExternalId($n, $ownerCompanyId);
 
         return DB::transaction(function () use ($n, $sourceId, $ownerCompanyId, $externalId, $collectRunId) {
             // Сериализация конкурентных воркеров по идентичности контента (ревью A1).
@@ -46,14 +52,16 @@ class Deduplicator
 
     private function isManualSource(int $sourceId): bool
     {
-        $connectionType = Source::query()->whereKey($sourceId)->value('connection_type');
+        return $this->manualSourceCache[$sourceId] ??= (function () use ($sourceId): bool {
+            $connectionType = Source::query()->whereKey($sourceId)->value('connection_type');
 
-        // value() через Eloquent Builder возвращает cast-значение (enum), сравниваем по строковому значению
-        if ($connectionType instanceof \BackedEnum) {
-            return $connectionType->value === SourceConnectionType::Manual->value;
-        }
+            // value() через Eloquent Builder возвращает cast-значение (enum), сравниваем по строковому значению
+            if ($connectionType instanceof \BackedEnum) {
+                return $connectionType->value === SourceConnectionType::Manual->value;
+            }
 
-        return $connectionType === SourceConnectionType::Manual->value;
+            return $connectionType === SourceConnectionType::Manual->value;
+        })();
     }
 
     private function findExisting(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): ?Tender
@@ -119,7 +127,7 @@ class Deduplicator
         $incoming = [
             'title' => $n->title,
             'description' => $n->description,
-            'price' => $n->price !== null ? number_format((float) $n->price, 2, '.', '') : null,
+            'price' => $n->price,
             'deadline_at' => $n->deadlineAt,
             'source_status' => $n->sourceStatus,
             'customer_name' => $n->customerName,
