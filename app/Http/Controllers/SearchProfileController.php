@@ -56,4 +56,24 @@ class SearchProfileController extends Controller
 
         return redirect()->route('profiles.index')->with('success', 'Направление удалено.');
     }
+
+    public function activate(SearchProfile $profile): RedirectResponse
+    {
+        if (! $profile->canActivate()) {
+            return back()->withErrors([
+                'activation' => 'Добавьте хотя бы один позитивный ключ (основной, точная фраза или расширенный).',
+            ]);
+        }
+
+        $profile->update(['is_active' => true]);
+
+        return back()->with('success', 'Направление активировано.');
+    }
+
+    public function deactivate(SearchProfile $profile): RedirectResponse
+    {
+        $profile->update(['is_active' => false]);
+
+        return back()->with('success', 'Направление выключено.');
+    }
 }

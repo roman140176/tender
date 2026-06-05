@@ -26,6 +26,8 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
         ->parameters(['profiles' => 'profile']);
     Route::post('profiles/{profile}/keywords', [KeywordController::class, 'store'])->name('profiles.keywords.store');
     Route::delete('keywords/{keyword}', [KeywordController::class, 'destroy'])->name('keywords.destroy');
+    Route::post('profiles/{profile}/activate', [SearchProfileController::class, 'activate'])->name('profiles.activate');
+    Route::post('profiles/{profile}/deactivate', [SearchProfileController::class, 'deactivate'])->name('profiles.deactivate');
 });
 
 require __DIR__.'/auth.php';

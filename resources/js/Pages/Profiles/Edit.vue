@@ -1,5 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
+import ActivationPanel from './Partials/ActivationPanel.vue';
 import KeywordManager from './Partials/KeywordManager.vue';
 import ProfileForm from './Partials/ProfileForm.vue';
 import { Head } from '@inertiajs/vue3';
@@ -27,7 +28,9 @@ defineProps({
                 <div class="bg-white p-6 shadow-sm sm:rounded-lg">
                     <KeywordManager :profile-id="profile.id" :keywords="keywords" />
                 </div>
-                <!-- Task 7: ActivationPanel -->
+                <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <ActivationPanel :profile="profile" :can-activate="canActivate" />
+                </div>
             </div>
         </div>
     </AuthenticatedLayout>
