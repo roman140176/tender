@@ -11,6 +11,9 @@ use Illuminate\Notifications\Notifiable;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 
+/**
+ * @property int|null $company_id
+ */
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
