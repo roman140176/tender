@@ -13,7 +13,6 @@ use App\Models\TenderStatusHistory;
 use App\Models\User;
 use App\Tenancy\TenantContext;
 use Illuminate\Database\QueryException;
-use RuntimeException;
 
 it('хранит per-company проекцию закупки и матч с расшифровкой', function () {
     $company = Company::factory()->create();
