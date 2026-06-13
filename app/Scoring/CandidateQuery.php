@@ -50,6 +50,9 @@ final class CandidateQuery
 
         $companyId = (int) $profile->company_id;
         $deadlineMinDays = (int) ($profile->deadline_min_days ?? 0);
+        // Порог от PHP now() (а не SQL now()): детерминирует тесты (Carbon::setTestNow)
+        // и согласует с дедлайн-скорингом Scorer, который тоже на PHP now().
+        $deadlineFloor = now()->addDays($deadlineMinDays);
 
         $query = Tender::query()
             ->where(function (Builder $q) use ($companyId) {
@@ -57,9 +60,9 @@ final class CandidateQuery
             })
             ->whereIn('source_id', $enabledSourceIds)
             // §4.2 шаг 2: кандидатный фильтр дедлайна (НЕ §7.1). Дефолт 0 → отсекаются просроченные.
-            ->where(function (Builder $q) use ($deadlineMinDays) {
+            ->where(function (Builder $q) use ($deadlineFloor) {
                 $q->whereNull('deadline_at')
-                    ->orWhereRaw('deadline_at >= now() + make_interval(days => ?)', [$deadlineMinDays]);
+                    ->orWhere('deadline_at', '>=', $deadlineFloor);
             })
             ->when($sinceUpdatedAt !== null, fn (Builder $q) => $q->where('updated_at', '>=', $sinceUpdatedAt));
 

@@ -14,7 +14,8 @@ final class KeywordMatchResolver
     /**
      * Определяет поле попадания каждого ключа в закупке:
      *  - exact: смежный нормализованный substring (title приоритетнее description);
-     *  - не-exact: морфология через plainto_tsquery('russian') ИЛИ substring (для аббревиатур).
+     *  - positive не-exact: морфология через plainto_tsquery('russian') ИЛИ substring (для аббревиатур);
+     *  - negative: только морфология (substring дал бы ложные исключения по подстроке внутри слов).
      *
      * @param  Collection<int, Keyword>  $keywords
      * @return array{positive: list<KeywordHit>, negative: list<KeywordHit>}
@@ -61,6 +62,15 @@ final class KeywordMatchResolver
 
         if ($kw->type === KeywordType::Exact) {
             return $subTitle ? 'title' : ($subDesc ? 'description' : null);
+        }
+
+        if ($kw->type === KeywordType::Negative) {
+            // Только FTS: substring дал бы ложные исключения по подстроке внутри слов
+            // (короткий негатив «бу» матчит «требуются», «обувь» через str_contains).
+            // Стеммер 'russian' уже ловит настоящие негативы, включая короткие леммы.
+            $fts = $ftsMap[$kw->value] ?? ['title' => false, 'desc' => false];
+
+            return $fts['title'] ? 'title' : ($fts['desc'] ? 'description' : null);
         }
 
         $fts = $ftsMap[$kw->value] ?? ['title' => false, 'desc' => false];

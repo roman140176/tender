@@ -102,3 +102,23 @@ it('негативные ключи попадают в отдельный сп�
     expect(hitField($resolved['positive'], 'кран'))->toBe('title')
         ->and(hitField($resolved['negative'], 'бывшие в употреблении'))->toBe('description');
 });
+
+it('короткий негатив не даёт ложного исключения по подстроке внутри слова', function () {
+    // 'бу' содержится подстрокой в 'требуются', но как лемма там отсутствует → негатив не срабатывает.
+    $profile = SearchProfile::factory()->create();
+    Keyword::factory()->for($profile)->create(['value' => 'бу', 'type' => KeywordType::Negative]);
+
+    $tender = Tender::factory()->create(['title' => 'Срочно требуются металлоконструкции', 'description' => null]);
+
+    expect(hitField(resolveHits($tender, $profile)['negative'], 'бу'))->toBeNull();
+});
+
+it('короткий негатив ловится FTS как настоящая лемма', function () {
+    // 'бу' присутствует отдельной леммой в названии → негатив срабатывает через стеммер.
+    $profile = SearchProfile::factory()->create();
+    Keyword::factory()->for($profile)->create(['value' => 'бу', 'type' => KeywordType::Negative]);
+
+    $tender = Tender::factory()->create(['title' => 'Поставка металлоконструкций бу', 'description' => null]);
+
+    expect(hitField(resolveHits($tender, $profile)['negative'], 'бу'))->toBe('title');
+});
