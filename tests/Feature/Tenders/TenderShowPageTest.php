@@ -66,5 +66,6 @@ it('viewer видит карточку, но canManage=false', function () {
         ->assertInertia(fn (Assert $page) => $page
             ->component('Tenders/Show')
             ->where('canManage', false)
-            ->where('match', null));
+            ->where('match', null)
+            ->where('assignableUsers', []));
 });

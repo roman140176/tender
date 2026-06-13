@@ -61,3 +61,15 @@ it('viewer не может назначать (403)', function () {
 
     $this->actingAs($viewer)->patch(route('tenders.assign', $ct), ['assigned_user_id' => $viewer->id])->assertForbidden();
 });
+
+it('нельзя назначать ответственного на закупку чужой компании (404)', function () {
+    $manager = User::factory()->create(['role' => UserRole::Manager]);
+    $foreign = CompanyTender::withoutTenancy()->create([
+        'company_id' => User::factory()->create()->company_id, 'tender_id' => Tender::factory()->create()->id,
+        'best_score' => 10, 'best_level' => RelevanceLevel::Low, 'first_matched_at' => now(),
+    ]);
+
+    $this->actingAs($manager)
+        ->patch(route('tenders.assign', $foreign), ['assigned_user_id' => $manager->id])
+        ->assertNotFound();
+});

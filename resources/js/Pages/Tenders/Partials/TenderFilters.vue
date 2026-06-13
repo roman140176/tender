@@ -16,10 +16,13 @@ const form = reactive({
     level: props.filters.level ?? '',
     law_type: props.filters.law_type ?? '',
     source_id: props.filters.source_id ?? '',
+    profile_id: props.filters.profile_id ?? '',
+    assignee: props.filters.assignee ?? '',
     region: props.filters.region ?? '',
     customer: props.filters.customer ?? '',
     price_min: props.filters.price_min ?? '',
     price_max: props.filters.price_max ?? '',
+    published_from: props.filters.published_from ?? '',
     deadline_to: props.filters.deadline_to ?? '',
 });
 
@@ -35,7 +38,7 @@ const applyNow = () => {
 
 // дебаунс только для текстовых полей; select/date применяются сразу через @change
 watch(
-    () => [form.q, form.region, form.customer, form.price_min, form.price_max, form.deadline_to],
+    () => [form.q, form.region, form.customer, form.price_min, form.price_max, form.published_from, form.deadline_to],
     () => {
         clearTimeout(timer);
         timer = setTimeout(apply, 400);
@@ -83,6 +86,20 @@ const reset = () => {
             </select>
         </div>
         <div>
+            <InputLabel for="profile_id" value="Направление" />
+            <select id="profile_id" v-model="form.profile_id" class="mt-1 block w-full rounded-md border-gray-300 text-sm" @change="applyNow">
+                <option value="">— любое —</option>
+                <option v-for="p in options.profiles" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+        </div>
+        <div>
+            <InputLabel for="assignee" value="Ответственный" />
+            <select id="assignee" v-model="form.assignee" class="mt-1 block w-full rounded-md border-gray-300 text-sm" @change="applyNow">
+                <option value="">— любой —</option>
+                <option v-for="u in options.users" :key="u.id" :value="u.id">{{ u.name }}</option>
+            </select>
+        </div>
+        <div>
             <InputLabel for="region" value="Регион" />
             <TextInput id="region" v-model="form.region" class="mt-1 block w-full" />
         </div>
@@ -97,6 +114,10 @@ const reset = () => {
         <div>
             <InputLabel for="price_max" value="Цена до" />
             <TextInput id="price_max" v-model="form.price_max" class="mt-1 block w-full" />
+        </div>
+        <div>
+            <InputLabel for="published_from" value="Дата публикации от" />
+            <TextInput id="published_from" v-model="form.published_from" type="date" class="mt-1 block w-full" />
         </div>
         <div>
             <InputLabel for="deadline_to" value="Дедлайн до" />

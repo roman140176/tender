@@ -9,10 +9,12 @@ use App\Http\Requests\TenderAssignRequest;
 use App\Http\Requests\TenderCommentRequest;
 use App\Http\Requests\TenderStatusRequest;
 use App\Models\CompanyTender;
+use App\Models\SearchProfile;
 use App\Models\Source;
 use App\Models\TenderComment;
 use App\Models\TenderMatch;
 use App\Models\TenderStatusHistory;
+use App\Models\User;
 use App\Scoring\MatchReasonPresenter;
 use App\Tenders\TenderListQuery;
 use Illuminate\Http\RedirectResponse;
@@ -48,6 +50,8 @@ class TenderController extends Controller
             'published_from', 'deadline_to', 'q',
         ]);
 
+        $companyId = $request->user()?->company_id;
+
         return Inertia::render('Tenders/Index', [
             'tenders' => $list->paginate($filters),
             'filters' => (object) $filters,
@@ -56,6 +60,8 @@ class TenderController extends Controller
                 'levels' => collect(RelevanceLevel::cases())->mapWithKeys(fn (RelevanceLevel $l): array => [$l->value => $l->label()]),
                 'laws' => collect(LawType::cases())->mapWithKeys(fn (LawType $l): array => [$l->value => $l->label()]),
                 'sources' => Source::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+                'profiles' => SearchProfile::query()->orderBy('name')->get(['id', 'name']),
+                'users' => User::query()->where('company_id', $companyId)->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             ],
         ]);
     }
