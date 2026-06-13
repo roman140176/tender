@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\LawType;
 use App\Enums\RelevanceLevel;
 use App\Enums\WorkflowStatus;
+use App\Http\Requests\TenderCommentRequest;
 use App\Http\Requests\TenderStatusRequest;
 use App\Models\CompanyTender;
 use App\Models\Source;
@@ -108,6 +109,20 @@ class TenderController extends Controller
                 : [],
             'canManage' => $canManage,
         ]);
+    }
+
+    public function storeComment(TenderCommentRequest $request, CompanyTender $companyTender): RedirectResponse
+    {
+        $userId = $request->user()->id;
+
+        TenderComment::create([
+            'company_id' => $companyTender->company_id,
+            'tender_id' => $companyTender->tender_id,
+            'user_id' => $userId,
+            'comment' => $request->validated()['comment'],
+        ]);
+
+        return back()->with('success', 'Комментарий добавлен.');
     }
 
     public function updateStatus(TenderStatusRequest $request, CompanyTender $companyTender): RedirectResponse
