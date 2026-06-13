@@ -4,7 +4,9 @@ namespace App\Services\Import;
 
 use App\Enums\RunStatus;
 use App\Enums\RunTrigger;
+use App\Jobs\MatchProfileJob;
 use App\Models\Company;
+use App\Models\SearchProfile;
 use App\Models\Source;
 use App\Models\SourceCollectRun;
 use Illuminate\Http\UploadedFile;
@@ -58,7 +60,12 @@ class ManualImportService
             throw $e;
         }
 
-        // A4: здесь диспатчится MatchProfileJob для активных профилей компании (trigger=import).
+        // A4: автоматчинг — по активным профилям компании (trigger=import).
+        SearchProfile::withoutTenancy()
+            ->where('company_id', $company->id)
+            ->where('is_active', true)
+            ->pluck('id')
+            ->each(fn (int $profileId) => MatchProfileJob::dispatch($profileId, RunTrigger::Import->value));
 
         return $run->refresh();
     }

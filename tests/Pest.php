@@ -26,6 +26,9 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Unit/Import');
 
+pest()->extend(TestCase::class)
+    ->in('Unit/Scoring');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
