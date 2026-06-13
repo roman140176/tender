@@ -28,6 +28,16 @@ class Keyword extends Model
         return ['type' => KeywordType::class, 'origin' => KeywordOrigin::class];
     }
 
+    /** Схлопывание пробелов/NBSP + trim. Регистр и ё НЕ трогаем (обрабатываются симметрично в матчере). */
+    public static function normalizeValue(string $value): string
+    {
+        // NBSP→space явно: симметрично Canonicalizer::text() и читаемо.
+        // (PCRE2 /\s+/u и так покрывает U+00A0, но оставляем явным — не зависим от версии PCRE.)
+        $value = str_replace("\u{00A0}", ' ', $value);
+
+        return trim((string) preg_replace('/\s+/u', ' ', $value));
+    }
+
     /** @return BelongsTo<SearchProfile, $this> */
     public function searchProfile(): BelongsTo
     {

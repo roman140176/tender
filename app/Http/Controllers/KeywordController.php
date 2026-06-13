@@ -13,6 +13,8 @@ class KeywordController extends Controller
 {
     public function store(Request $request, SearchProfile $profile): RedirectResponse
     {
+        $request->merge(['value' => Keyword::normalizeValue((string) $request->input('value', ''))]);
+
         $validated = $request->validate([
             'value' => [
                 'required', 'string', 'max:255',

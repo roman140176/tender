@@ -27,5 +27,10 @@ class AppServiceProvider extends ServiceProvider
         Vite::prefetch(concurrency: 3);
 
         Gate::define('manage-company', fn (User $user): bool => $user->role === UserRole::Admin && $user->company_id !== null);
+
+        Gate::define('view-tenders', fn (User $user): bool => $user->company_id !== null);
+
+        Gate::define('manage-tender-workflow', fn (User $user): bool => $user->company_id !== null
+            && in_array($user->role, [UserRole::Admin, UserRole::Manager], true));
     }
 }

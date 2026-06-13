@@ -54,6 +54,12 @@ watch(
                                 >
                                     Дашборд
                                 </NavLink>
+                                <template v-if="$page.props.auth.can.viewTenders">
+                                    <NavLink :href="route('tenders.index')" :active="route().current('tenders.*')">
+                                        Закупки
+                                    </NavLink>
+                                    <NavLink :href="route('runs.index')" :active="route().current('runs.*')">Запуски</NavLink>
+                                </template>
                                 <template v-if="$page.props.auth.can.manageCompany">
                                 <NavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
                                     Направления
@@ -175,6 +181,12 @@ watch(
                         >
                             Дашборд
                         </ResponsiveNavLink>
+                        <template v-if="$page.props.auth.can.viewTenders">
+                            <ResponsiveNavLink :href="route('tenders.index')" :active="route().current('tenders.*')">
+                                Закупки
+                            </ResponsiveNavLink>
+                            <ResponsiveNavLink :href="route('runs.index')" :active="route().current('runs.*')">Запуски</ResponsiveNavLink>
+                        </template>
                         <template v-if="$page.props.auth.can.manageCompany">
                             <ResponsiveNavLink :href="route('profiles.index')" :active="route().current('profiles.*')">
                                 Направления

@@ -13,6 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use RuntimeException;
 
+/**
+ * @property WorkflowStatus $status
+ * @property RelevanceLevel $best_level
+ * @property int $best_score
+ * @property int|null $assigned_user_id
+ */
 class CompanyTender extends Model
 {
     use BelongsToCompany;
@@ -30,6 +36,12 @@ class CompanyTender extends Model
             'best_score' => 'integer',
             'first_matched_at' => 'datetime',
         ];
+    }
+
+    /** @return BelongsTo<Company, $this> */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /** @return BelongsTo<Tender, $this> */
