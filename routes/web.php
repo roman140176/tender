@@ -6,6 +6,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SearchProfileController;
+use App\Http\Controllers\TenderController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -38,6 +39,17 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
     Route::get('imports/template', [ImportController::class, 'template'])->name('imports.template');
     Route::get('imports', [ImportController::class, 'index'])->name('imports.index');
     Route::post('imports', [ImportController::class, 'store'])->name('imports.store');
+});
+
+Route::middleware(['auth', 'can:view-tenders'])->group(function () {
+    Route::get('tenders', [TenderController::class, 'index'])->name('tenders.index');
+    Route::get('tenders/{companyTender}', [TenderController::class, 'show'])->name('tenders.show');
+});
+
+Route::middleware(['auth', 'can:manage-tender-workflow'])->group(function () {
+    Route::patch('tenders/{companyTender}/status', [TenderController::class, 'updateStatus'])->name('tenders.status');
+    Route::post('tenders/{companyTender}/comments', [TenderController::class, 'storeComment'])->name('tenders.comment');
+    Route::patch('tenders/{companyTender}/assignee', [TenderController::class, 'assign'])->name('tenders.assign');
 });
 
 require __DIR__.'/auth.php';
