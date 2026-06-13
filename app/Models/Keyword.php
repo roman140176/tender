@@ -28,6 +28,14 @@ class Keyword extends Model
         return ['type' => KeywordType::class, 'origin' => KeywordOrigin::class];
     }
 
+    /** Схлопывание пробелов/NBSP + trim. Регистр и ё НЕ трогаем (обрабатываются симметрично в матчере). */
+    public static function normalizeValue(string $value): string
+    {
+        $value = str_replace("\u{00A0}", ' ', $value);
+
+        return trim((string) preg_replace('/\s+/u', ' ', $value));
+    }
+
     /** @return BelongsTo<SearchProfile, $this> */
     public function searchProfile(): BelongsTo
     {
