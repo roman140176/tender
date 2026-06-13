@@ -10,7 +10,24 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * Истинные типы кастов (Larastan выводит из jsonb/enum/datetime-колонок неверно).
+ *
+ * @property bool $is_active
+ * @property list<string>|null $law_types
+ * @property list<string>|null $regions
+ * @property list<string>|null $excluded_regions
+ * @property list<string>|null $okpd2_codes
+ * @property numeric-string|null $min_price
+ * @property numeric-string|null $max_price
+ * @property bool $exclude_on_negative_in_title
+ * @property array<string, mixed>|null $scoring_weights
+ * @property ScheduleType $schedule_type
+ * @property Carbon|null $last_run_at
+ * @property Carbon|null $next_run_at
+ */
 class SearchProfile extends Model
 {
     use BelongsToCompany;

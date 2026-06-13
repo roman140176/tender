@@ -9,7 +9,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * Истинные типы кастов (Larastan выводит из jsonb/enum/datetime-колонок неверно).
+ *
+ * @property numeric-string|null $price
+ * @property LawType $law_type
+ * @property TenderSourceStatus $source_status
+ * @property Carbon|null $published_at
+ * @property Carbon|null $deadline_at
+ * @property list<string>|null $okpd2
+ * @property list<string>|null $ktru
+ * @property array<string, mixed>|null $extra
+ * @property Carbon|null $first_seen_at
+ * @property Carbon|null $last_seen_at
+ */
 class Tender extends Model
 {
     /** @use HasFactory<TenderFactory> */
