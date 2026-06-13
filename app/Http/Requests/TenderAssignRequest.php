@@ -20,7 +20,7 @@ class TenderAssignRequest extends FormRequest
         return [
             'assigned_user_id' => [
                 'nullable',
-                Rule::exists('users', 'id')->where('company_id', $companyId),
+                Rule::exists('users', 'id')->where('company_id', $companyId)->where('is_active', true),
             ],
         ];
     }

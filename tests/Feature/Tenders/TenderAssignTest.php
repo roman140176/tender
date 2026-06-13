@@ -44,6 +44,17 @@ it('нельзя назначить пользователя чужой комп
     expect($ct->refresh()->assigned_user_id)->toBeNull();
 });
 
+it('нельзя назначить неактивного пользователя своей компании', function () {
+    $manager = User::factory()->create(['role' => UserRole::Manager]);
+    $inactive = User::factory()->for($manager->company)->create(['is_active' => false]);
+    $ct = assignCt($manager);
+
+    $this->actingAs($manager)
+        ->patch(route('tenders.assign', $ct), ['assigned_user_id' => $inactive->id])
+        ->assertSessionHasErrors('assigned_user_id');
+    expect($ct->refresh()->assigned_user_id)->toBeNull();
+});
+
 it('viewer не может назначать (403)', function () {
     $viewer = User::factory()->create(['role' => UserRole::Viewer]);
     $ct = assignCt($viewer);
