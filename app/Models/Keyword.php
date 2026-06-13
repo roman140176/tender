@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Истинные типы кастов (Larastan выводит enum-колонки type/origin как string).
+ *
+ * @property string $value
+ * @property KeywordType $type
+ * @property KeywordOrigin $origin
+ */
 class Keyword extends Model
 {
     /** @use HasFactory<KeywordFactory> */
