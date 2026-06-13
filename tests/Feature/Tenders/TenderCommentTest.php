@@ -44,3 +44,16 @@ it('пустой комментарий отклоняется', function () {
 
     $this->actingAs($manager)->post(route('tenders.comment', $ct), ['comment' => ''])->assertSessionHasErrors('comment');
 });
+
+it('нельзя комментировать закупку чужой компании (404)', function () {
+    $manager = User::factory()->create(['role' => UserRole::Manager]);
+    $foreign = CompanyTender::withoutTenancy()->create([
+        'company_id' => User::factory()->create()->company_id, 'tender_id' => Tender::factory()->create()->id,
+        'best_score' => 10, 'best_level' => RelevanceLevel::Low, 'first_matched_at' => now(),
+    ]);
+
+    $this->actingAs($manager)
+        ->post(route('tenders.comment', $foreign), ['comment' => 'чужая'])
+        ->assertNotFound();
+    expect(TenderComment::withoutTenancy()->count())->toBe(0);
+});
