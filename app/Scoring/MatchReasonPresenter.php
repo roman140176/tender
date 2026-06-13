@@ -42,6 +42,7 @@ final class MatchReasonPresenter
             $detail = (string) ($entry['detail'] ?? '');
 
             $template = self::RULE_LABELS[$rule] ?? "{$rule}: {detail}";
+            // str_replace не рекурсивен: {detail} внутри самого $detail не интерпретируется (экранирование не нужно).
             $text = str_replace('{detail}', $detail, $template);
 
             $out[] = $text.' ('.self::sign($points).')';
@@ -64,6 +65,10 @@ final class MatchReasonPresenter
 
     private static function sign(int $points): string
     {
+        if ($points === 0) {
+            return '0';
+        }
+
         return $points < 0 ? '−'.abs($points) : '+'.$points;
     }
 }

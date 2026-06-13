@@ -40,3 +40,14 @@ it('risks() переводит флаги в рус. строки, неизве�
             'Дедлайн не указан',
         ]);
 });
+
+it('lines() и risks() возвращают [] для пустого ввода', function () {
+    expect(MatchReasonPresenter::lines([]))->toBe([])
+        ->and(MatchReasonPresenter::risks([]))->toBe([]);
+});
+
+it('lines() для нулевого балла выводит 0 без знака', function () {
+    $lines = MatchReasonPresenter::lines([['rule' => 'okpd_match', 'points' => 0, 'detail' => '28.22']]);
+
+    expect($lines)->toBe(['Совпадение по ОКПД2/КТРУ: 28.22 (0)']);
+});
