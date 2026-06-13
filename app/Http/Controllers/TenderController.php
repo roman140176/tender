@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\LawType;
 use App\Enums\RelevanceLevel;
 use App\Enums\WorkflowStatus;
+use App\Http\Requests\TenderStatusRequest;
 use App\Models\CompanyTender;
 use App\Models\Source;
 use App\Models\TenderComment;
@@ -12,6 +13,7 @@ use App\Models\TenderMatch;
 use App\Models\TenderStatusHistory;
 use App\Scoring\MatchReasonPresenter;
 use App\Tenders\TenderListQuery;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -105,5 +107,25 @@ class TenderController extends Controller
                 : [],
             'canManage' => $canManage,
         ]);
+    }
+
+    public function updateStatus(TenderStatusRequest $request, CompanyTender $companyTender): RedirectResponse
+    {
+        $new = WorkflowStatus::from($request->validated()['status']);
+        $oldRaw = $companyTender->getRawOriginal('status');
+        $old = WorkflowStatus::from($oldRaw);
+
+        if ($new !== $old) {
+            $companyTender->update(['status' => $new]);
+            TenderStatusHistory::create([
+                'company_id' => $companyTender->company_id,
+                'tender_id' => $companyTender->tender_id,
+                'user_id' => $request->user()->id,
+                'old_status' => $old->value,
+                'new_status' => $new->value,
+            ]);
+        }
+
+        return back()->with('success', 'Статус обновлён.');
     }
 }
