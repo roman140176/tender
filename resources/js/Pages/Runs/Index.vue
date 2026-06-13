@@ -9,6 +9,8 @@ defineProps({
 
 const date = (v) => (v ? new Date(v).toLocaleString('ru-RU') : '—');
 const statusClass = (s) => ({ ok: 'text-green-700', error: 'text-red-700', running: 'text-gray-500' }[s] ?? 'text-gray-700');
+const triggerLabel = (v) => ({ import: 'Импорт', schedule: 'Расписание', manual: 'Вручную' }[v] ?? v);
+const statusLabel = (v) => ({ running: 'Запущен', ok: 'Успешно', error: 'Ошибка' }[v] ?? v);
 </script>
 
 <template>
@@ -29,8 +31,8 @@ const statusClass = (s) => ({ ok: 'text-green-700', error: 'text-red-700', runni
                         <tbody class="divide-y bg-white">
                             <tr v-for="r in collectRuns" :key="'c' + r.id">
                                 <td class="px-3 py-2">{{ r.source?.name ?? '—' }}</td>
-                                <td class="px-3 py-2">{{ r.trigger }}</td>
-                                <td class="px-3 py-2" :class="statusClass(r.status)">{{ r.status }}</td>
+                                <td class="px-3 py-2">{{ triggerLabel(r.trigger) }}</td>
+                                <td class="px-3 py-2" :class="statusClass(r.status)">{{ statusLabel(r.status) }}</td>
                                 <td class="px-3 py-2">{{ r.fetched_count }} / {{ r.new_count }} / {{ r.error_count }}</td>
                                 <td class="px-3 py-2 text-gray-500">{{ date(r.started_at) }}</td>
                             </tr>
@@ -48,8 +50,8 @@ const statusClass = (s) => ({ ok: 'text-green-700', error: 'text-red-700', runni
                         <tbody class="divide-y bg-white">
                             <tr v-for="r in radarRuns" :key="'r' + r.id">
                                 <td class="px-3 py-2">{{ r.searchProfile?.name ?? '—' }}</td>
-                                <td class="px-3 py-2">{{ r.trigger }}</td>
-                                <td class="px-3 py-2" :class="statusClass(r.status)">{{ r.status }}</td>
+                                <td class="px-3 py-2">{{ triggerLabel(r.trigger) }}</td>
+                                <td class="px-3 py-2" :class="statusClass(r.status)">{{ statusLabel(r.status) }}</td>
                                 <td class="px-3 py-2">{{ r.processed_count }} / {{ r.matched_count }}</td>
                                 <td class="px-3 py-2 text-gray-500">{{ date(r.started_at) }}</td>
                             </tr>
