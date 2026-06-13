@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property list<array{value: string, type: string, field: string}> $matched_keywords
  * @property list<array{value: string, type: string, field: string}> $matched_negative_keywords
+ * @property list<array{rule: string, points: int, detail: string}> $reason
+ * @property list<string> $risk_flags
  */
 class TenderMatch extends Model
 {
