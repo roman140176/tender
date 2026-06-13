@@ -53,3 +53,15 @@ it('нельзя менять статус закупки чужой компа�
 
     $this->actingAs($manager)->patch(route('tenders.status', $foreign), ['status' => 'interesting'])->assertNotFound();
 });
+
+it('повторная отправка того же статуса не создаёт строку истории', function () {
+    $manager = User::factory()->create(['role' => UserRole::Manager]);
+    $ct = makeCt($manager); // status = New
+
+    $this->actingAs($manager)
+        ->patch(route('tenders.status', $ct), ['status' => 'new'])
+        ->assertRedirect();
+
+    expect(TenderStatusHistory::withoutTenancy()->count())->toBe(0)
+        ->and($ct->refresh()->status)->toBe(WorkflowStatus::New);
+});

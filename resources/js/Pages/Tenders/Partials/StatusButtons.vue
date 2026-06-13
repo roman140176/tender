@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 import { router } from '@inertiajs/vue3';
 
 const props = defineProps({
@@ -8,13 +9,24 @@ const props = defineProps({
     canManage: { type: Boolean, required: true },
 });
 
+const processing = ref(false);
+
 const setStatus = (event) => {
-    router.patch(route('tenders.status', props.companyTender.id), { status: event.target.value }, { preserveScroll: true });
+    if (processing.value) return;
+    processing.value = true;
+    router.patch(route('tenders.status', props.companyTender.id), { status: event.target.value }, {
+        preserveScroll: true,
+        onFinish: () => { processing.value = false; },
+    });
 };
 
 const assign = (event) => {
-    router.patch(route('tenders.assign', props.companyTender.id),
-        { assigned_user_id: event.target.value || null }, { preserveScroll: true });
+    if (processing.value) return;
+    processing.value = true;
+    router.patch(route('tenders.assign', props.companyTender.id), { assigned_user_id: event.target.value || null }, {
+        preserveScroll: true,
+        onFinish: () => { processing.value = false; },
+    });
 };
 </script>
 
@@ -23,7 +35,7 @@ const assign = (event) => {
         <h3 class="mb-3 font-semibold text-gray-800">Статус</h3>
         <select
             :value="companyTender.status"
-            :disabled="!canManage"
+            :disabled="!canManage || processing"
             class="block w-full rounded-md border-gray-300 text-sm disabled:bg-gray-100"
             @change="setStatus"
         >
@@ -33,7 +45,7 @@ const assign = (event) => {
         <h3 class="mb-2 mt-5 font-semibold text-gray-800">Ответственный</h3>
         <select
             :value="companyTender.assigned_user_id ?? ''"
-            :disabled="!canManage"
+            :disabled="!canManage || processing"
             class="block w-full rounded-md border-gray-300 text-sm disabled:bg-gray-100"
             @change="assign"
         >

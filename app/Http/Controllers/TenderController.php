@@ -15,6 +15,7 @@ use App\Scoring\MatchReasonPresenter;
 use App\Tenders\TenderListQuery;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -112,18 +113,20 @@ class TenderController extends Controller
     public function updateStatus(TenderStatusRequest $request, CompanyTender $companyTender): RedirectResponse
     {
         $new = WorkflowStatus::from($request->validated()['status']);
-        $oldRaw = $companyTender->getRawOriginal('status');
-        $old = WorkflowStatus::from($oldRaw);
+        $old = $companyTender->status;
 
         if ($new !== $old) {
-            $companyTender->update(['status' => $new]);
-            TenderStatusHistory::create([
-                'company_id' => $companyTender->company_id,
-                'tender_id' => $companyTender->tender_id,
-                'user_id' => $request->user()->id,
-                'old_status' => $old->value,
-                'new_status' => $new->value,
-            ]);
+            $userId = $request->user()->id;
+            DB::transaction(function () use ($companyTender, $new, $old, $userId): void {
+                $companyTender->update(['status' => $new]);
+                TenderStatusHistory::create([
+                    'company_id' => $companyTender->company_id,
+                    'tender_id' => $companyTender->tender_id,
+                    'user_id' => $userId,
+                    'old_status' => $old->value,
+                    'new_status' => $new->value,
+                ]);
+            });
         }
 
         return back()->with('success', 'Статус обновлён.');
