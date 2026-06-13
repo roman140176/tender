@@ -119,3 +119,24 @@ it('сортирует по best_score убыванию и пагинирует'
     expect($page->total())->toBe(2)
         ->and($page->items()[0]->best_score)->toBe(90); // сильнейший первым
 });
+
+it('нейтрализует wildcard-символы (%) в текстовом поиске', function () {
+    $company = Company::factory()->create();
+    matchedTender($company, ['title' => 'цена 100% гарантия']);
+    matchedTender($company, ['title' => 'цена 100 рублей']);
+
+    // '100%' экранируется → ищется литеральная подстрока "100%", а не "100" + любой хвост
+    expect(listFor($company, ['q' => '100%'])->total())->toBe(1);
+});
+
+it('применяет несколько фильтров одновременно (AND)', function () {
+    $company = Company::factory()->create();
+    matchedTender($company, ['title' => 'Поставка кранов', 'price' => '2000000'],
+        ['status' => WorkflowStatus::Interesting]);
+    matchedTender($company, ['title' => 'Поставка кранов', 'price' => '300000'],
+        ['status' => WorkflowStatus::Interesting]); // ниже price_min
+    matchedTender($company, ['title' => 'Ремонт кровли', 'price' => '5000000'],
+        ['status' => WorkflowStatus::New]); // другой статус и текст
+
+    expect(listFor($company, ['status' => 'interesting', 'q' => 'кран', 'price_min' => '1000000'])->total())->toBe(1);
+});

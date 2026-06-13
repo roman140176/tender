@@ -20,14 +20,17 @@ final class TenderListQuery
     {
         $query = CompanyTender::query()
             ->with(['tender.source', 'assignee:id,name'])
-            ->whereHas('matches') // только реально сматченные (не осиротевшие)
+            ->when(
+                $this->filled($filters, 'profile_id'),
+                fn (Builder $q) => $q->whereHas(
+                    'matches',
+                    fn (Builder $m) => $m->where('search_profile_id', (int) $filters['profile_id']),
+                ),
+                fn (Builder $q) => $q->whereHas('matches'), // нет profile_id → просто скрыть осиротевшие
+            )
             ->when($this->filled($filters, 'status'), fn (Builder $q) => $q->where('status', $filters['status']))
             ->when($this->filled($filters, 'level'), fn (Builder $q) => $q->where('best_level', $filters['level']))
             ->when($this->filled($filters, 'assignee'), fn (Builder $q) => $q->where('assigned_user_id', (int) $filters['assignee']))
-            ->when($this->filled($filters, 'profile_id'), fn (Builder $q) => $q->whereHas(
-                'matches',
-                fn (Builder $m) => $m->where('search_profile_id', (int) $filters['profile_id']),
-            ))
             ->whereHas('tender', function (Builder $t) use ($filters): void {
                 $t->when($this->filled($filters, 'source_id'), fn (Builder $q) => $q->where('source_id', (int) $filters['source_id']))
                     ->when($this->filled($filters, 'law_type'), fn (Builder $q) => $q->where('law_type', $filters['law_type']))
