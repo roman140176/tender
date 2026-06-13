@@ -59,12 +59,13 @@ class TenderController extends Controller
     {
         $companyTender->load('tender.source', 'assignee:id,name');
 
-        /** @var TenderMatch|null $best */
-        $best = TenderMatch::query()
+        $matches = TenderMatch::query()
             ->where('tender_id', $companyTender->tender_id)
             ->with('searchProfile:id,name')
-            ->orderByDesc('score')
-            ->first();
+            ->get();
+
+        /** @var TenderMatch|null $best */
+        $best = $matches->sortByDesc('score')->first();
 
         $comments = TenderComment::query()
             ->where('tender_id', $companyTender->tender_id)
@@ -76,6 +77,8 @@ class TenderController extends Controller
             ->where('tender_id', $companyTender->tender_id)
             ->orderByDesc('created_at')
             ->get(['id', 'old_status', 'new_status', 'created_at']);
+
+        $canManage = (bool) $request->user()?->can('manage-tender-workflow');
 
         return Inertia::render('Tenders/Show', [
             'companyTender' => $companyTender,
@@ -90,18 +93,17 @@ class TenderController extends Controller
                 'risks' => MatchReasonPresenter::risks($best->risk_flags ?? []),
                 'matchedKeywords' => $best->matched_keywords ?? [],
                 'matchedNegativeKeywords' => $best->matched_negative_keywords ?? [],
-                'profiles' => TenderMatch::query()
-                    ->where('tender_id', $companyTender->tender_id)
-                    ->with('searchProfile:id,name')
-                    ->get()
+                'profiles' => $matches
                     ->map(fn (TenderMatch $m): array => ['name' => $m->searchProfile?->name, 'score' => $m->score])
                     ->values(),
             ],
             'comments' => $comments,
             'history' => $history,
             'statusOptions' => WorkflowStatus::options(),
-            'assignableUsers' => $companyTender->company->users()->where('is_active', true)->get(['id', 'name']),
-            'canManage' => (bool) $request->user()?->can('manage-tender-workflow'),
+            'assignableUsers' => $canManage
+                ? $companyTender->company->users()->where('is_active', true)->get(['id', 'name'])
+                : [],
+            'canManage' => $canManage,
         ]);
     }
 }

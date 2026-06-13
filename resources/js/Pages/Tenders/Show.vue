@@ -37,6 +37,7 @@ const date = (v) => (v ? new Date(v).toLocaleString('ru-RU') : '—');
                     <div class="bg-white p-6 shadow-sm sm:rounded-lg">
                         <h3 class="mb-4 font-semibold text-gray-800">Данные закупки</h3>
                         <dl class="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                            <div><dt class="text-gray-500">Источник</dt><dd>{{ tender.source?.name ?? '—' }}</dd></div>
                             <div><dt class="text-gray-500">Заказчик</dt><dd>{{ tender.customer_name ?? '—' }}</dd></div>
                             <div><dt class="text-gray-500">Регион</dt><dd>{{ tender.region ?? '—' }}</dd></div>
                             <div><dt class="text-gray-500">Сумма</dt><dd>{{ money(tender.price) }}</dd></div>
@@ -63,6 +64,18 @@ const date = (v) => (v ? new Date(v).toLocaleString('ru-RU') : '—');
                         </ul>
                         <div v-if="match.risks.length" class="mt-3 flex flex-wrap gap-2">
                             <span v-for="(r, i) in match.risks" :key="i" class="rounded bg-red-100 px-2 py-1 text-xs text-red-800">{{ r }}</span>
+                        </div>
+                        <div v-if="match.matchedKeywords.length" class="mt-3">
+                            <p class="text-xs font-medium text-gray-600">Найденные ключи:</p>
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                <span v-for="(k, i) in match.matchedKeywords" :key="i" class="rounded bg-green-100 px-2 py-1 text-xs text-green-800">{{ k.value }}</span>
+                            </div>
+                        </div>
+                        <div v-if="match.matchedNegativeKeywords.length" class="mt-2">
+                            <p class="text-xs font-medium text-gray-600">Минус-слова:</p>
+                            <div class="mt-1 flex flex-wrap gap-1">
+                                <span v-for="(k, i) in match.matchedNegativeKeywords" :key="i" class="rounded bg-yellow-100 px-2 py-1 text-xs text-yellow-800">{{ k.value }}</span>
+                            </div>
                         </div>
                     </div>
 

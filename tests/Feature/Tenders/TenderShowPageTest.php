@@ -37,6 +37,7 @@ it('отдаёт карточку с объяснением балла, риск
             ->where('match.risks.0', 'Цена не указана')
             ->where('match.recommendation', 'Мониторить')
             ->has('match.profiles', 1)
+            ->where('match.matchedKeywords.0.value', 'краны')
             ->where('canManage', true));
 });
 
@@ -62,5 +63,8 @@ it('viewer видит карточку, но canManage=false', function () {
 
     $this->actingAs($viewer)
         ->get(route('tenders.show', $ct))
-        ->assertInertia(fn (Assert $page) => $page->component('Tenders/Show')->where('canManage', false));
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Tenders/Show')
+            ->where('canManage', false)
+            ->where('match', null));
 });
