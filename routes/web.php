@@ -5,6 +5,7 @@ use App\Http\Controllers\CompanySourceController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RunController;
 use App\Http\Controllers\SearchProfileController;
 use App\Http\Controllers\TenderController;
 use Illuminate\Support\Facades\Route;
@@ -44,6 +45,7 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
 Route::middleware(['auth', 'can:view-tenders'])->group(function () {
     Route::get('tenders', [TenderController::class, 'index'])->name('tenders.index');
     Route::get('tenders/{companyTender}', [TenderController::class, 'show'])->name('tenders.show');
+    Route::get('runs', [RunController::class, 'index'])->name('runs.index');
 });
 
 Route::middleware(['auth', 'can:manage-tender-workflow'])->group(function () {
