@@ -1,0 +1,112 @@
+{
+  "profile": {
+    "name": "Металлоконструкции",
+    "min_price": "1000000.00",
+    "max_price": null,
+    "regions": ["Москва"],
+    "excluded_regions": ["Чечня"],
+    "okpd2_codes": ["25.11"],
+    "law_types": ["fz44", "fz223"],
+    "exclude_on_negative_in_title": true,
+    "keywords": [
+      {"value": "металлоконструкции", "type": "main"},
+      {"value": "изготовление металлоконструкций", "type": "exact"},
+      {"value": "КМД", "type": "main"},
+      {"value": "монтаж", "type": "broad"},
+      {"value": "срочно", "type": "high_priority"},
+      {"value": "доставка", "type": "low_priority"},
+      {"value": "бу", "type": "negative"},
+      {"value": "бывшие в употреблении", "type": "negative"}
+    ]
+  },
+  "cases": [
+    {
+      "note": "#0 exact_in_title 30 + keyword_in_title 20 (main 'металлоконструкции' морфологически в названии) + price 20 + region 10 + okpd 5 = 85",
+      "title": "Изготовление металлоконструкций для склада",
+      "description": "комплект оборудования для объекта",
+      "price": "5000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": ["25.11.23.000"], "deadline_offset_days": 3, "source_status": "active",
+      "expected_score": 85, "expected_level": "high"
+    },
+    {
+      "note": "#1 keyword_in_title 20 + price_below_min -10 = 10",
+      "title": "Поставка металлоконструкций",
+      "description": "без подробностей",
+      "price": "500000.00", "region": "Тверь", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_score": 10, "expected_level": "low"
+    },
+    {
+      "note": "#2 КМД main в названии (ILIKE+substring) → keyword_in_title 20 + region 10; price NULL нейтрально; main 'металлоконструкции' в описании не добавляет (правило 2 сработало по title) = 30",
+      "title": "Разработка КМД и КМ",
+      "description": "металлоконструкции каркаса",
+      "price": null, "region": "Москва", "law_type": "fz223",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_score": 30, "expected_level": "low"
+    },
+    {
+      "note": "#3 негатив 'бу' в названии при exclude_on_negative_in_title → матч НЕ создаётся",
+      "title": "Металлоконструкции бу со склада",
+      "description": "распродажа",
+      "price": "2000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_match": false
+    },
+    {
+      "note": "#4 keyword_in_title 20 + price 20 + region 10 + source_closed -30 = 20",
+      "title": "Монтаж металлоконструкций",
+      "description": "работы по объекту",
+      "price": "3000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "completed",
+      "expected_score": 20, "expected_level": "low"
+    },
+    {
+      "note": "#5 жёсткий фильтр §7.1: регион Чечня в excluded_regions → не матчится",
+      "title": "Металлоконструкции для ремонта",
+      "description": "поставка",
+      "price": "2000000.00", "region": "Чечня", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_match": false
+    },
+    {
+      "note": "#6 жёсткий фильтр §7.1: law=other при непустом law_types → не матчится",
+      "title": "Металлоконструкции прочие",
+      "description": "поставка",
+      "price": "2000000.00", "region": "Москва", "law_type": "other",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_match": false
+    },
+    {
+      "note": "#7 keyword_in_title 20 + high_priority_bonus 10 ('срочно' в названии) + price 20 + region 10 + okpd 5 + deadline_far 10 = 75. ВАЖНО: название НЕ 'требуются' — глагол содержит подстроку 'бу', а негатив 'бу' (не-exact) матчится по substring → ложное исключение по §7.2 п.5. Используем 'нужны'.",
+      "title": "Срочно нужны металлоконструкции",
+      "description": "монтаж на площадке",
+      "price": "2000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": ["25.11.10"], "deadline_offset_days": 10, "source_status": "active",
+      "expected_score": 75, "expected_level": "medium"
+    },
+    {
+      "note": "#8 keyword_in_title 20 + price 20 + region 10 + deadline_soon -20 (дедлайн +1 день) = 30",
+      "title": "Поставка металлоконструкций",
+      "description": "комплект",
+      "price": "2000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 1, "source_status": "active",
+      "expected_score": 30, "expected_level": "low"
+    },
+    {
+      "note": "#9 негатив 'бывшие в употреблении' в ОПИСАНИИ (exclude только по названию) → keyword_in_title 20 + negative -20 + price 20 + region 10 = 30",
+      "title": "Поставка металлоконструкций",
+      "description": "оборудование бывшие в употреблении",
+      "price": "2000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_score": 30, "expected_level": "low"
+    },
+    {
+      "note": "#10 low_priority-only ('доставка' морфологически в названии, нет main/exact/broad) → low_priority_score 2 + price 20 + region 10 = 32",
+      "title": "Услуги доставки грузов",
+      "description": "логистика",
+      "price": "2000000.00", "region": "Москва", "law_type": "fz44",
+      "okpd2": [], "deadline_offset_days": 3, "source_status": "active",
+      "expected_score": 32, "expected_level": "low"
+    }
+  ]
+}
