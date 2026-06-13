@@ -7,7 +7,8 @@ use App\Models\SearchProfile;
 it('Keyword::normalizeValue схлопывает пробелы/NBSP и тримит, сохраняя регистр и ё', function () {
     expect(Keyword::normalizeValue("  Ёлочные \u{00A0} ГИРЛЯНДЫ  "))->toBe('Ёлочные ГИРЛЯНДЫ')
         ->and(Keyword::normalizeValue('металлоконструкции'))->toBe('металлоконструкции')
-        ->and(Keyword::normalizeValue("кран\tмостовой"))->toBe('кран мостовой');
+        ->and(Keyword::normalizeValue("кран\tмостовой"))->toBe('кран мостовой')
+        ->and(Keyword::normalizeValue("слово\u{00A0}слово"))->toBe('слово слово');
 });
 
 it('контроллер сохраняет ключ в нормализованном виде', function () {
