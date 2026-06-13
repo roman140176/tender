@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\LawType;
 use App\Enums\RelevanceLevel;
 use App\Enums\WorkflowStatus;
+use App\Http\Requests\TenderAssignRequest;
 use App\Http\Requests\TenderCommentRequest;
 use App\Http\Requests\TenderStatusRequest;
 use App\Models\CompanyTender;
@@ -145,5 +146,12 @@ class TenderController extends Controller
         }
 
         return back()->with('success', 'Статус обновлён.');
+    }
+
+    public function assign(TenderAssignRequest $request, CompanyTender $companyTender): RedirectResponse
+    {
+        $companyTender->update(['assigned_user_id' => $request->validated()['assigned_user_id'] ?? null]);
+
+        return back()->with('success', 'Ответственный обновлён.');
     }
 }
