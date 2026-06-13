@@ -45,6 +45,14 @@ it('viewer видит список закупок', function () {
             ->has('filterOptions.sources'));
 });
 
+it('невалидный price_min (не число) отклоняется валидацией', function () {
+    $admin = adminWithPlan();
+
+    $this->actingAs($admin)
+        ->get(route('tenders.index', ['price_min' => 'abc']))
+        ->assertSessionHasErrors('price_min');
+});
+
 it('фильтр по статусу применяется через query', function () {
     $admin = adminWithPlan();
     seedMatched($admin, [], ['status' => WorkflowStatus::Interesting]);

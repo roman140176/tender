@@ -44,7 +44,7 @@ class TenderController extends Controller
             'filterOptions' => [
                 'statuses' => WorkflowStatus::options(),
                 'levels' => collect(RelevanceLevel::cases())->mapWithKeys(fn (RelevanceLevel $l): array => [$l->value => $l->label()]),
-                'laws' => collect(LawType::cases())->mapWithKeys(fn (LawType $l): array => [$l->value => $l->name]),
+                'laws' => collect(LawType::cases())->mapWithKeys(fn (LawType $l): array => [$l->value => $l->label()]),
                 'sources' => Source::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             ],
         ]);

@@ -28,14 +28,23 @@ const apply = () => {
     const query = Object.fromEntries(Object.entries(form).filter(([, v]) => v !== '' && v !== null));
     router.get(route('tenders.index'), query, { preserveState: true, preserveScroll: true, replace: true });
 };
-
-watch(form, () => {
+const applyNow = () => {
     clearTimeout(timer);
-    timer = setTimeout(apply, 400); // дебаунс текстовых полей
-});
+    apply();
+};
+
+// дебаунс только для текстовых полей; select/date применяются сразу через @change
+watch(
+    () => [form.q, form.region, form.customer, form.price_min, form.price_max, form.deadline_to],
+    () => {
+        clearTimeout(timer);
+        timer = setTimeout(apply, 400);
+    },
+);
 
 const reset = () => {
     Object.keys(form).forEach((k) => (form[k] = ''));
+    applyNow();
 };
 </script>
 
@@ -47,28 +56,28 @@ const reset = () => {
         </div>
         <div>
             <InputLabel for="status" value="Статус" />
-            <select id="status" v-model="form.status" class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+            <select id="status" v-model="form.status" class="mt-1 block w-full rounded-md border-gray-300 text-sm" @change="applyNow">
                 <option value="">— любой —</option>
                 <option v-for="(label, value) in options.statuses" :key="value" :value="value">{{ label }}</option>
             </select>
         </div>
         <div>
             <InputLabel for="level" value="Релевантность" />
-            <select id="level" v-model="form.level" class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+            <select id="level" v-model="form.level" class="mt-1 block w-full rounded-md border-gray-300 text-sm" @change="applyNow">
                 <option value="">— любая —</option>
                 <option v-for="(label, value) in options.levels" :key="value" :value="value">{{ label }}</option>
             </select>
         </div>
         <div>
             <InputLabel for="law" value="Закон" />
-            <select id="law" v-model="form.law_type" class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+            <select id="law" v-model="form.law_type" class="mt-1 block w-full rounded-md border-gray-300 text-sm" @change="applyNow">
                 <option value="">— любой —</option>
                 <option v-for="(label, value) in options.laws" :key="value" :value="value">{{ label }}</option>
             </select>
         </div>
         <div>
             <InputLabel for="source" value="Источник" />
-            <select id="source" v-model="form.source_id" class="mt-1 block w-full rounded-md border-gray-300 text-sm">
+            <select id="source" v-model="form.source_id" class="mt-1 block w-full rounded-md border-gray-300 text-sm" @change="applyNow">
                 <option value="">— любой —</option>
                 <option v-for="s in options.sources" :key="s.id" :value="s.id">{{ s.name }}</option>
             </select>

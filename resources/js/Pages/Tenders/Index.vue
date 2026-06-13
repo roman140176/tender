@@ -17,7 +17,7 @@ const levelClass = (level) => ({
     low: 'bg-gray-100 text-gray-600',
 }[level] ?? 'bg-gray-100 text-gray-600');
 
-const money = (v) => (v === null ? '—' : Number(v).toLocaleString('ru-RU') + ' ₽');
+const money = (v) => (v === null ? '—' : Number(v).toLocaleString('ru-RU', { maximumFractionDigits: 0 }) + ' ₽');
 const date = (v) => (v ? new Date(v).toLocaleDateString('ru-RU') : '—');
 </script>
 

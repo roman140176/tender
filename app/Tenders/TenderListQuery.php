@@ -34,7 +34,7 @@ final class TenderListQuery
             ->whereHas('tender', function (Builder $t) use ($filters): void {
                 $t->when($this->filled($filters, 'source_id'), fn (Builder $q) => $q->where('source_id', (int) $filters['source_id']))
                     ->when($this->filled($filters, 'law_type'), fn (Builder $q) => $q->where('law_type', $filters['law_type']))
-                    ->when($this->filled($filters, 'region'), fn (Builder $q) => $q->where('region', $filters['region']))
+                    ->when($this->filled($filters, 'region'), fn (Builder $q) => $q->where('region', 'ILIKE', '%'.$this->escape((string) $filters['region']).'%'))
                     ->when($this->filled($filters, 'customer'), fn (Builder $q) => $q->where('customer_name', 'ILIKE', '%'.$this->escape((string) $filters['customer']).'%'))
                     ->when($this->filled($filters, 'price_min'), fn (Builder $q) => $q->whereNotNull('price')->where('price', '>=', $filters['price_min']))
                     ->when($this->filled($filters, 'price_max'), fn (Builder $q) => $q->whereNotNull('price')->where('price', '<=', $filters['price_max']))

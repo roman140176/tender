@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\ActionRecommendation;
+use App\Enums\LawType;
 use App\Enums\RelevanceLevel;
 use App\Enums\WorkflowStatus;
 
@@ -24,6 +25,13 @@ it('RelevanceLevel отдаёт русские лейблы', function () {
         ->and(RelevanceLevel::Medium->label())->toBe('Средняя')
         ->and(RelevanceLevel::Weak->label())->toBe('Слабая')
         ->and(RelevanceLevel::Low->label())->toBe('Низкая');
+});
+
+it('LawType отдаёт русские лейблы', function () {
+    expect(LawType::Fz44->label())->toBe('44-ФЗ')
+        ->and(LawType::Fz223->label())->toBe('223-ФЗ')
+        ->and(LawType::Commercial->label())->toBe('Коммерческая')
+        ->and(LawType::Other->label())->toBe('Прочее');
 });
 
 it('ActionRecommendation отдаёт русские лейблы (словарь 26.1)', function () {
