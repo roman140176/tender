@@ -9,6 +9,16 @@ enum RelevanceLevel: string
     case Weak = 'weak';
     case Low = 'low';
 
+    public function label(): string
+    {
+        return match ($this) {
+            self::High => 'Высокая',
+            self::Medium => 'Средняя',
+            self::Weak => 'Слабая',
+            self::Low => 'Низкая',
+        };
+    }
+
     public static function fromScore(int $score): self
     {
         return match (true) {
