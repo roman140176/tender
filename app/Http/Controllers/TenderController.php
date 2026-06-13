@@ -5,7 +5,12 @@ namespace App\Http\Controllers;
 use App\Enums\LawType;
 use App\Enums\RelevanceLevel;
 use App\Enums\WorkflowStatus;
+use App\Models\CompanyTender;
 use App\Models\Source;
+use App\Models\TenderComment;
+use App\Models\TenderMatch;
+use App\Models\TenderStatusHistory;
+use App\Scoring\MatchReasonPresenter;
 use App\Tenders\TenderListQuery;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -47,6 +52,56 @@ class TenderController extends Controller
                 'laws' => collect(LawType::cases())->mapWithKeys(fn (LawType $l): array => [$l->value => $l->label()]),
                 'sources' => Source::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
             ],
+        ]);
+    }
+
+    public function show(Request $request, CompanyTender $companyTender): Response
+    {
+        $companyTender->load('tender.source', 'assignee:id,name');
+
+        /** @var TenderMatch|null $best */
+        $best = TenderMatch::query()
+            ->where('tender_id', $companyTender->tender_id)
+            ->with('searchProfile:id,name')
+            ->orderByDesc('score')
+            ->first();
+
+        $comments = TenderComment::query()
+            ->where('tender_id', $companyTender->tender_id)
+            ->with('user:id,name')
+            ->orderByDesc('created_at')
+            ->get(['id', 'user_id', 'comment', 'created_at']);
+
+        $history = TenderStatusHistory::query()
+            ->where('tender_id', $companyTender->tender_id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'old_status', 'new_status', 'created_at']);
+
+        return Inertia::render('Tenders/Show', [
+            'companyTender' => $companyTender,
+            'tender' => $companyTender->tender,
+            'lawLabel' => $companyTender->tender->law_type->label(),
+            'match' => $best === null ? null : [
+                'score' => $best->score,
+                'level' => $best->level->value,
+                'levelLabel' => $best->level->label(),
+                'recommendation' => $best->action_recommendation->label(),
+                'reasonLines' => MatchReasonPresenter::lines($best->reason ?? []),
+                'risks' => MatchReasonPresenter::risks($best->risk_flags ?? []),
+                'matchedKeywords' => $best->matched_keywords ?? [],
+                'matchedNegativeKeywords' => $best->matched_negative_keywords ?? [],
+                'profiles' => TenderMatch::query()
+                    ->where('tender_id', $companyTender->tender_id)
+                    ->with('searchProfile:id,name')
+                    ->get()
+                    ->map(fn (TenderMatch $m): array => ['name' => $m->searchProfile?->name, 'score' => $m->score])
+                    ->values(),
+            ],
+            'comments' => $comments,
+            'history' => $history,
+            'statusOptions' => WorkflowStatus::options(),
+            'assignableUsers' => $companyTender->company->users()->where('is_active', true)->get(['id', 'name']),
+            'canManage' => (bool) $request->user()?->can('manage-tender-workflow'),
         ]);
     }
 }
