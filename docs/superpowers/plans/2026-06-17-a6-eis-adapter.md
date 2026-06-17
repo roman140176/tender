@@ -537,12 +537,13 @@ cd /home/roman/sites/www/tender && git add app/Adapters/ tests/Unit/Eis/DtoTest.
 **Files:**
 - Create `database/migrations/2026_06_17_000001_set_eis_adapter_class.php`
 - Create `tests/Feature/Eis/EisAdapterClassMigrationTest.php`
+- **Modify `database/seeders/SourceSeeder.php`** — для источника `eis` выставить `adapter_class` и `schedule_cron` (путь fresh-install)
 
 **Interfaces:**
-- Consumes: таблица `sources`, запись `code='eis'` (сеется `SourceSeeder`, `adapter_class` намеренно NULL в сидере)
+- Consumes: таблица `sources`, запись `code='eis'` (сеется `SourceSeeder`)
 - Produces: `sources.adapter_class = App\Adapters\Eis\EisAdapter::class`, `sources.schedule_cron = '0 */4 * * *'` — читает `CollectSourceJob`
 
-**Примечание:** `SourceSeeder` намеренно исключает `adapter_class` и `schedule_cron` из `updateOrCreate` (строка `array_diff_key`), поэтому data-миграция — единственный путь выставить эти значения без риска затирания при пересеве.
+**Примечание (исправление при исполнении — баг порядка migrate→seed):** при обычном потоке `php artisan migrate` отрабатывает ДО `db:seed`, поэтому на свежей установке data-миграция выполняется когда строки `eis` ещё нет → **no-op**, и после `SourceSeeder` (который исключал `adapter_class` через `array_diff_key`) `eis.adapter_class` остаётся `null` → `CollectSourceJob` падает на `app(null)`. Проект ещё не в проде, единственный реальный путь — fresh install. Поэтому **`SourceSeeder` обязан сам задавать** `eis.adapter_class`/`schedule_cron`. Data-миграция СОХРАНЯЕТСЯ как идемпотентный backfill для уже засеянных БД (текущая dev-БД имеет `eis.adapter_class=null` — миграция её починит при `migrate`). Конкретно: в `SourceSeeder` для `eis` задать `'adapter_class' => \App\Adapters\Eis\EisAdapter::class, 'schedule_cron' => '0 */4 * * *'`, для `manual` — оба `null`, и передавать в `updateOrCreate` ПОЛНЫЙ массив (убрать `array_diff_key`-исключение — для встроенных источников каноничный маппинг сеется детерминированно). Добавить тест: после `$this->seed(SourceSeeder::class)` → `Source::where('code','eis')->value('adapter_class')` === `\App\Adapters\Eis\EisAdapter::class` и `schedule_cron` === `'0 */4 * * *'`.
 
 ---
 
@@ -710,7 +711,7 @@ No errors found.
 - [ ] **Commit**
 
 ```bash
-cd /home/roman/sites/www/tender && git add database/migrations/2026_06_17_000001_set_eis_adapter_class.php tests/Feature/Eis/EisAdapterClassMigrationTest.php && git commit -m "A6 C1/Task3: data-миграция set_eis_adapter_class — выставляет EisAdapter::class и schedule_cron для source code=eis"
+cd /home/roman/sites/www/tender && git add database/migrations/2026_06_17_000001_set_eis_adapter_class.php database/seeders/SourceSeeder.php tests/Feature/Eis/EisAdapterClassMigrationTest.php && git commit -m "A6 C1/Task3: data-миграция set_eis_adapter_class — выставляет EisAdapter::class и schedule_cron для source code=eis"
 ```
 
 ---
