@@ -8,7 +8,11 @@ use Carbon\CarbonImmutable;
 
 final readonly class NormalizedTender
 {
-    /** @param list<string> $okpd2 */
+    /**
+     * @param  list<string>  $okpd2
+     * @param  list<string>  $ktru
+     * @param  array<string, mixed>  $extra
+     */
     public function __construct(
         public string $title,
         public ?string $description,
@@ -26,5 +30,7 @@ final readonly class NormalizedTender
         public ?string $number,
         public array $okpd2,
         public string $contentHash,
+        public array $ktru = [],
+        public array $extra = [],
     ) {}
 }
