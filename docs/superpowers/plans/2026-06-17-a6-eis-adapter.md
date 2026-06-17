@@ -59,7 +59,8 @@
 
 **Files:**
 - Create `config/eis.php`
-- Create `tests/Feature/Eis/EisConfigTest.php`
+- Create `tests/Unit/Eis/EisConfigTest.php` (config-тест в Unit — без БД/RefreshDatabase)
+- Modify `tests/Pest.php` — зарегистрировать `pest()->extend(TestCase::class)->in('Unit/Eis')` (Task 1 — ЕДИНСТВЕННЫЙ владелец регистрации `Unit/Eis`; Task 2 её НЕ дублирует)
 
 **Interfaces:**
 - Consumes: `env('EIS_ENDPOINT')`, `env('EIS_TOKEN')`, `env('EIS_REGIONS')`, `env('EIS_BACKFILL_DAYS')`, `env('EIS_STORAGE_DISK')`
@@ -69,7 +70,7 @@
 
 - [ ] **Write failing test**
 
-Создать `tests/Feature/Eis/EisConfigTest.php`:
+Создать `tests/Unit/Eis/EisConfigTest.php`:
 
 ```php
 <?php
@@ -219,7 +220,7 @@ Tests:  10 passed
 - [ ] **Commit**
 
 ```bash
-cd /home/roman/sites/www/tender && git add config/eis.php tests/Feature/Eis/EisConfigTest.php && git commit -m "A6 C1/Task1: config/eis.php — конфиг адаптера ЕИС (endpoint, fields, notice_roots, subsystem_law_map)"
+cd /home/roman/sites/www/tender && git add config/eis.php tests/Pest.php tests/Unit/Eis/EisConfigTest.php && git commit -m "A6 C1/Task1: config/eis.php — конфиг адаптера ЕИС (endpoint, fields, notice_roots, subsystem_law_map)"
 ```
 
 ---
@@ -502,12 +503,7 @@ interface EisGateway
 }
 ```
 
-Зарегистрировать namespace в `tests/Pest.php` (добавить блок для `Unit/Eis`):
-
-```php
-pest()->extend(TestCase::class)
-    ->in('Unit/Eis');
-```
+Регистрация `Unit/Eis` в `tests/Pest.php` УЖЕ выполнена в Task 1 (владелец) — здесь НЕ добавлять (повтор даст `TestCaseAlreadyInUse`).
 
 - [ ] **Run** (Expected PASS)
 
@@ -531,7 +527,7 @@ Tests:  8 passed
 - [ ] **Commit**
 
 ```bash
-cd /home/roman/sites/www/tender && git add app/Adapters/ tests/Unit/Eis/DtoTest.php tests/Pest.php && git commit -m "A6 C1/Task2: DTO и интерфейсы адаптера (CollectParams, PackageRef, RawTender, RawTenderDetails, TenderSourceAdapter, EisGateway)"
+cd /home/roman/sites/www/tender && git add app/Adapters/ tests/Unit/Eis/DtoTest.php && git commit -m "A6 C1/Task2: DTO и интерфейсы адаптера (CollectParams, PackageRef, RawTender, RawTenderDetails, TenderSourceAdapter, EisGateway)"
 ```
 
 ---
@@ -732,7 +728,7 @@ cd /home/roman/sites/www/tender && git add database/migrations/2026_06_17_000001
 | `app/Adapters/Eis/EisGateway.php` | создан |
 | `database/migrations/2026_06_17_000001_set_eis_adapter_class.php` | создан |
 | `tests/Pest.php` | добавлен блок `Unit/Eis` |
-| `tests/Feature/Eis/EisConfigTest.php` | создан (10 тестов) |
+| `tests/Unit/Eis/EisConfigTest.php` | создан (10 тестов) |
 | `tests/Unit/Eis/DtoTest.php` | создан (8 тестов) |
 | `tests/Feature/Eis/EisAdapterClassMigrationTest.php` | создан (3 теста) |
 
