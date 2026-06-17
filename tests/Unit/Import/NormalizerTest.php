@@ -2,6 +2,7 @@
 
 use App\Enums\LawType;
 use App\Enums\TenderSourceStatus;
+use App\Services\Import\Canonicalizer;
 use App\Services\Import\NormalizationException;
 use App\Services\Import\Normalizer;
 
@@ -60,4 +61,50 @@ it('кривые цена и дата не валят строку, а стан�
 it('неизвестный закон и статус маппятся в other/unknown', function () {
     $n = app(Normalizer::class)->normalize(['title' => 'X', 'law_type' => '94-ФЗ', 'source_status' => 'черновик']);
     expect($n->lawType)->toBe(LawType::Other)->and($n->sourceStatus)->toBe(TenderSourceStatus::Unknown);
+});
+
+it('parseDate: xs:dateTime с +03:00 конвертируется в UTC', function () {
+    $n = app(Normalizer::class)->normalize([
+        'title' => 'X',
+        'published_at' => '2026-06-15T10:00:00+03:00',
+    ]);
+
+    // 10:00+03:00 = 07:00 UTC
+    expect($n->publishedAt)->not->toBeNull()
+        ->and($n->publishedAt->timezone->getName())->toBe('UTC')
+        ->and($n->publishedAt->format('Y-m-d H:i:s'))->toBe('2026-06-15 07:00:00');
+});
+
+it('parseDate: xs:dateTime с +03:00 сохраняет дату Y-m-d для contentHash', function () {
+    $n = app(Normalizer::class)->normalize([
+        'title' => 'Хэш',
+        'published_at' => '2026-06-15T00:30:00+03:00', // до полуночи UTC — дата сдвигается
+    ]);
+
+    // 00:30+03:00 = 21:30 UTC 14-го
+    expect($n->publishedAt->format('Y-m-d'))->toBe('2026-06-14');
+    // contentHash должен использовать UTC-дату
+    $expected = Canonicalizer::contentHash('Хэш', null, null, '2026-06-14', null);
+    expect($n->contentHash)->toBe($expected);
+});
+
+it('parseDate: формат без tz (d.m.Y) остаётся UTC, не смещается', function () {
+    $n = app(Normalizer::class)->normalize([
+        'title' => 'X',
+        'published_at' => '01.06.2026',
+    ]);
+
+    expect($n->publishedAt)->not->toBeNull()
+        ->and($n->publishedAt->timezone->getName())->toBe('UTC')
+        ->and($n->publishedAt->format('Y-m-d'))->toBe('2026-06-01');
+});
+
+it('parseDate: Y-m-d H:i:s без tz трактуется как UTC', function () {
+    $n = app(Normalizer::class)->normalize([
+        'title' => 'X',
+        'published_at' => '2026-06-20 10:00:00',
+    ]);
+
+    expect($n->publishedAt->timezone->getName())->toBe('UTC')
+        ->and($n->publishedAt->format('Y-m-d H:i:s'))->toBe('2026-06-20 10:00:00');
 });
