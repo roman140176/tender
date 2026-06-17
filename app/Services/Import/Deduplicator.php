@@ -87,7 +87,7 @@ class Deduplicator
         })();
     }
 
-    private function findExisting(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): ?Tender
+    protected function findExisting(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): ?Tender
     {
         /** @param Builder<Tender> $q */
         $scope = fn (Builder $q): Builder => $q

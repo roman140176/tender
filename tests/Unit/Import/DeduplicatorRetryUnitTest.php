@@ -7,7 +7,6 @@ use App\Models\Source;
 use App\Models\Tender;
 use App\Services\Import\Canonicalizer;
 use App\Services\Import\Deduplicator;
-use App\Services\Import\DedupResult;
 use App\Services\Import\NormalizedTender;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -16,22 +15,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 /**
- * Тесты retry-as-find (интеграционные).
- *
- * DONE_WITH_CONCERNS: тест через DB::shouldReceive('transaction') отброшен как fragile —
- * мокирование DB-фасада несовместимо с реальными Eloquent/advisory-lock вызовами внутри
- * retry-пути. Подкласс-симулятор (DeduplicatorRaceSimulator с override create()) тоже
- * невозможен в одном потоке с RefreshDatabase: findExisting первой транзакции всегда
- * найдёт уже вставленную строку, create() не вызывается.
- *
- * RED-доказательство зафиксировано через git: без retry-catch в process() тест
- * «race simulator: UCE из create()» падал с UniqueConstraintViolationException
- * (подтверждено запуском с create() protected и без catch — см. task-6-report.md).
- *
- * Тесты ниже проверяют постусловия: строка с тем же (source_id, external_id) уже в БД
- * (как после успешного retry) → process() не бросает UCE, возвращает valid DedupResult.
+ * Тесты уровня 1 (level-1 found path): строка уже существует в БД до вызова process().
+ * findExisting() находит её в ПЕРВОЙ транзакции, create() НЕ вызывается, catch НЕ срабатывает.
+ * Это тесты идемпотентности/каскадного обновления, а не retry-ветки.
  */
-it('deduplicator: строка с тем же external_id и другой ценой — updated, не UCE', function () {
+it('level-1 found: строка с тем же external_id и другой ценой — updated, create не вызывается', function () {
     $source = Source::factory()->create([
         'code' => 'eis-retry-'.fake()->unique()->numerify('###'),
         'connection_type' => SourceConnectionType::Api,
@@ -43,7 +31,7 @@ it('deduplicator: строка с тем же external_id и другой цен
     $hash = Canonicalizer::contentHash($title, 'ГБУЗ Больница', '7701234567', $pubDate, $price);
     $extId = '0173200001426000001';
 
-    // «Воркер А» вставил строку — эмулируем состояние «после гонки, конкурент победил»
+    // Строка уже в БД — process() найдёт её на первом findExisting, минуя create()
     Tender::create([
         'source_id' => $source->id,
         'owner_company_id' => null,
@@ -64,7 +52,6 @@ it('deduplicator: строка с тем же external_id и другой цен
         'last_seen_at' => now()->subHour(),
     ]);
 
-    // «Воркер Б» — тот же extId, другая цена → другой hash
     $hash2 = Canonicalizer::contentHash($title, 'ГБУЗ Больница', '7701234567', $pubDate, '1300000.00');
 
     $n = new NormalizedTender(
@@ -93,7 +80,7 @@ it('deduplicator: строка с тем же external_id и другой цен
         ->and(Tender::sole()->price)->toBe('1300000.00');
 });
 
-it('deduplicator: строка с тем же external_id и тем же hash — unchanged, без дублей', function () {
+it('level-1 found: строка с тем же external_id и тем же hash — unchanged, без дублей', function () {
     $source = Source::factory()->create([
         'code' => 'eis-spy-'.fake()->unique()->numerify('###'),
         'connection_type' => SourceConnectionType::Api,
@@ -145,15 +132,7 @@ it('deduplicator: строка с тем же external_id и тем же hash �
         ->and(Tender::find($existing->id))->not->toBeNull();
 });
 
-/**
- * Тест через assertThrows: process() без retry-catch бросил бы UCE напрямую.
- * С retry-catch — UCE поглощается и возвращается DedupResult.
- *
- * Используем реальную UCE: создаём строку, затем пытаемся вставить дубль через DB::statement.
- * Но это за пределами Deduplicator. Вместо этого — явная проверка через throwable-ожидание:
- * убеждаемся, что process() при existing строке НЕ выбрасывает UniqueConstraintViolationException.
- */
-it('process() никогда не пробрасывает UCE когда строка уже существует по external_id', function () {
+it('level-1 found: process() не пробрасывает UCE когда строка уже существует по external_id', function () {
     $source = Source::factory()->create([
         'code' => 'eis-no-throw-'.fake()->unique()->numerify('###'),
         'connection_type' => SourceConnectionType::Api,
@@ -202,8 +181,7 @@ it('process() никогда не пробрасывает UCE когда стр
         contentHash: $hash2,
     );
 
-    // Если бы process() пробрасывал UCE — этот тест упал бы.
-    // С retry-catch — process() возвращает DedupResult в любом случае.
+    // Строка существует → level-1 found → process() возвращает DedupResult, UCE не бросается
     $threw = false;
     try {
         $result = app(Deduplicator::class)->process($n, $source->id, null);
