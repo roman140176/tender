@@ -18,6 +18,10 @@ class SourceCollectRun extends Model
             'status' => RunStatus::class,
             'started_at' => 'datetime',
             'finished_at' => 'datetime',
+            'fetched_count' => 'integer',
+            'new_count' => 'integer',
+            'updated_count' => 'integer',
+            'error_count' => 'integer',
         ];
     }
 
