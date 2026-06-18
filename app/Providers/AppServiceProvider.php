@@ -37,5 +37,7 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('manage-tender-workflow', fn (User $user): bool => $user->company_id !== null
             && in_array($user->role, [UserRole::Admin, UserRole::Manager], true));
+
+        Gate::define('superadmin', fn (User $user): bool => $user->role === UserRole::Superadmin);
     }
 }

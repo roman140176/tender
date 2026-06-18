@@ -74,6 +74,11 @@ watch(
                                     Компания
                                 </NavLink>
                             </template>
+                                <template v-if="$page.props.auth.can.superadmin">
+                                    <NavLink :href="route('admin.sources.index')" :active="route().current('admin.sources.*')">
+                                        Адм. источники
+                                    </NavLink>
+                                </template>
                             </div>
                         </div>
 
@@ -199,6 +204,11 @@ watch(
                             </ResponsiveNavLink>
                             <ResponsiveNavLink :href="route('company.edit')" :active="route().current('company.*')">
                                 Компания
+                            </ResponsiveNavLink>
+                        </template>
+                        <template v-if="$page.props.auth.can.superadmin">
+                            <ResponsiveNavLink :href="route('admin.sources.index')" :active="route().current('admin.sources.*')">
+                                Адм. источники
                             </ResponsiveNavLink>
                         </template>
                     </div>
