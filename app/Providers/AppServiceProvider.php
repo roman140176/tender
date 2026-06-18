@@ -39,5 +39,7 @@ class AppServiceProvider extends ServiceProvider
             && in_array($user->role, [UserRole::Admin, UserRole::Manager], true));
 
         Gate::define('superadmin', fn (User $user): bool => $user->role === UserRole::Superadmin);
+
+        Gate::define('viewHorizon', fn (User $user): bool => $user->role === UserRole::Superadmin);
     }
 }
