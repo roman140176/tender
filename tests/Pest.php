@@ -32,6 +32,9 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Unit/Scoring');
 
+pest()->extend(TestCase::class)
+    ->in('Unit/Queue');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
