@@ -46,6 +46,11 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
 Route::middleware(['auth', 'can:view-tenders'])->group(function () {
     Route::get('tenders', [TenderController::class, 'index'])->name('tenders.index');
     Route::get('tenders/{companyTender}', [TenderController::class, 'show'])->name('tenders.show');
+});
+
+// runs вне can:view-tenders: суперадмин (company_id=null) проваливает gate, но контроллер
+// сам ветвит доступ по isSuperadmin (eisRuns суперадмину; company-scoped — остальным).
+Route::middleware('auth')->group(function () {
     Route::get('runs', [RunController::class, 'index'])->name('runs.index');
 });
 

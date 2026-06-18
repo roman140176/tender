@@ -1,11 +1,14 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
 
 defineProps({
     radarRuns: { type: Array, required: true },
     collectRuns: { type: Array, required: true },
+    eisRuns: { type: Array, required: true },
 });
+
+const isSuperadmin = usePage().props.auth.can.superadmin;
 
 const date = (v) => (v ? new Date(v).toLocaleString('ru-RU') : '—');
 const statusClass = (s) => ({ ok: 'text-green-700', error: 'text-red-700', running: 'text-gray-500' }[s] ?? 'text-gray-700');
@@ -22,7 +25,35 @@ const statusLabel = (v) => ({ running: 'Запущен', ok: 'Успешно', e
 
         <div class="py-8">
             <div class="mx-auto max-w-7xl space-y-6 sm:px-6 lg:px-8">
-                <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+
+                <!-- ЕИС-раны (суперадмин) -->
+                <div v-if="isSuperadmin" class="bg-white p-6 shadow-sm sm:rounded-lg">
+                    <h3 class="mb-3 font-semibold text-gray-800">Глобальный сбор ЕИС (суперадмин)</h3>
+                    <table class="min-w-full divide-y divide-gray-200 text-sm">
+                        <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                            <tr>
+                                <th class="px-3 py-2">Источник</th>
+                                <th class="px-3 py-2">Триггер</th>
+                                <th class="px-3 py-2">Статус</th>
+                                <th class="px-3 py-2">Найдено/Новых/Обновлено/Ошибок</th>
+                                <th class="px-3 py-2">Начало</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y bg-white">
+                            <tr v-for="r in eisRuns" :key="'e' + r.id">
+                                <td class="px-3 py-2">{{ r.source?.name ?? '—' }}</td>
+                                <td class="px-3 py-2">{{ triggerLabel(r.trigger) }}</td>
+                                <td class="px-3 py-2" :class="statusClass(r.status)">{{ statusLabel(r.status) }}</td>
+                                <td class="px-3 py-2">{{ r.fetched_count }} / {{ r.new_count }} / {{ r.updated_count }} / {{ r.error_count }}</td>
+                                <td class="px-3 py-2 text-gray-500">{{ date(r.started_at) }}</td>
+                            </tr>
+                            <tr v-if="!eisRuns.length"><td colspan="5" class="px-3 py-4 text-gray-400">Запусков ЕИС нет.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Сбор компании (обычные пользователи) -->
+                <div v-if="!isSuperadmin" class="bg-white p-6 shadow-sm sm:rounded-lg">
                     <h3 class="mb-3 font-semibold text-gray-800">Сбор данных (импорт/источники)</h3>
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -41,7 +72,8 @@ const statusLabel = (v) => ({ running: 'Запущен', ok: 'Успешно', e
                     </table>
                 </div>
 
-                <div class="bg-white p-6 shadow-sm sm:rounded-lg">
+                <!-- Матчинг (только для компаний) -->
+                <div v-if="!isSuperadmin" class="bg-white p-6 shadow-sm sm:rounded-lg">
                     <h3 class="mb-3 font-semibold text-gray-800">Матчинг (радар)</h3>
                     <table class="min-w-full divide-y divide-gray-200 text-sm">
                         <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -59,6 +91,7 @@ const statusLabel = (v) => ({ running: 'Запущен', ok: 'Успешно', e
                         </tbody>
                     </table>
                 </div>
+
             </div>
         </div>
     </AuthenticatedLayout>
