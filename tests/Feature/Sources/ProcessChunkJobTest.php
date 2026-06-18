@@ -185,22 +185,31 @@ it('Batchable: при отменённом батче job выходит дос�
     $source->save();
 
     $run = makeEisRun($source);
-    $zipPath = '/tmp/nonexistent.zip';
+
+    // Валидный архив: без guard'а создал бы tender (см. тест fz44 выше)
+    $zipPath = Storage::disk('local')->path('eis/'.$run->id.'/cancel.zip');
+    @mkdir(dirname($zipPath), 0755, true);
+    $fz44Xml = base_path('tests/Fixtures/eis/fz44_notice.xml');
+    $archive = makeEisArchive([$fz44Xml]);
+    copy($archive, $zipPath);
 
     $job = new ProcessChunkJob($run->id, $source->id, $zipPath, LawType::Fz44);
 
-    // Мокаем batch() чтобы вернуть отменённый батч
+    // Подменяем РЕАЛЬНЫЙ seam трейта Batchable ($fakeBatch, не $batch) отменённым батчем
     $batchMock = Mockery::mock(Batch::class);
-    $batchMock->shouldReceive('cancelled')->andReturn(true);
+    $batchMock->shouldReceive('cancelled')->once()->andReturn(true);
 
-    // Подменяем через Closure-bind
     $setCancelledBatch = Closure::bind(function () use ($batchMock) {
-        $this->batch = $batchMock;
+        $this->fakeBatch = $batchMock;
     }, $job, $job);
     $setCancelledBatch();
 
     $job->handle(app(Deduplicator::class));
 
-    // Ничего не создано
+    // Guard сработал: валидный архив НЕ обработан, счётчики не тронуты
     expect(Tender::count())->toBe(0);
+
+    $run->refresh();
+    expect($run->fetched_count)->toBe(0)
+        ->and($run->new_count)->toBe(0);
 });
