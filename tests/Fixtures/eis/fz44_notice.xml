@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ns2:export xmlns:ns2="http://zakupki.gov.ru/oos/export/1" xmlns="http://zakupki.gov.ru/oos/export/1">
+  <ns2:fcsNotificationEF>
+    <purchaseNumber>0173200001426000001</purchaseNumber>
+    <purchaseObjectInfo>Поставка медицинского оборудования</purchaseObjectInfo>
+    <docPublishDate>2026-06-15T10:00:00+03:00</docPublishDate>
+    <purchaseResponsible><responsibleOrg>
+      <fullName>ГБУЗ Городская больница №1</fullName><INN>7701234567</INN><regionCode>77</regionCode>
+    </responsibleOrg></purchaseResponsible>
+    <notificationInfo><procedureInfo><collecting><endDate>2026-06-25T18:00:00+03:00</endDate></collecting></procedureInfo></notificationInfo>
+    <lot><maxPrice>1200000.50</maxPrice><purchaseObjects><purchaseObject>
+      <OKPDCode>32.50.13.190</OKPDCode><KTRUCode>32.50.13.190-00000123</KTRUCode>
+    </purchaseObject></purchaseObjects></lot>
+  </ns2:fcsNotificationEF>
+</ns2:export>

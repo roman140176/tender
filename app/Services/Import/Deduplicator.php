@@ -6,6 +6,7 @@ use App\Enums\SourceConnectionType;
 use App\Models\Source;
 use App\Models\Tender;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -36,18 +37,40 @@ class Deduplicator
             ? $n->number
             : $this->syntheticExternalId($n, $ownerCompanyId);
 
-        return DB::transaction(function () use ($n, $sourceId, $ownerCompanyId, $externalId, $collectRunId) {
-            // Сериализация конкурентных воркеров по идентичности контента (ревью A1).
-            DB::statement('SELECT pg_advisory_xact_lock(hashtext(?))', [$n->contentHash]);
+        try {
+            return DB::transaction(function () use ($n, $sourceId, $ownerCompanyId, $externalId, $collectRunId) {
+                // Сериализация конкурентных воркеров по идентичности контента (ревью A1).
+                DB::statement('SELECT pg_advisory_xact_lock(hashtext(?))', [$n->contentHash]);
 
-            $existing = $this->findExisting($n, $sourceId, $ownerCompanyId, $externalId);
+                $existing = $this->findExisting($n, $sourceId, $ownerCompanyId, $externalId);
 
-            if ($existing === null) {
-                return new DedupResult($this->create($n, $sourceId, $ownerCompanyId, $externalId), 'created');
-            }
+                if ($existing === null) {
+                    return new DedupResult($this->create($n, $sourceId, $ownerCompanyId, $externalId), 'created');
+                }
 
-            return $this->refresh($existing, $n, $collectRunId);
-        });
+                return $this->refresh($existing, $n, $collectRunId);
+            });
+        } catch (UniqueConstraintViolationException) {
+            // Гонка двух чанков по одному (source_id, external_id): конкурент вставил строку
+            // между нашим findExisting (вернул null) и INSERT. Один повтор — теперь строка есть.
+            return DB::transaction(function () use ($n, $sourceId, $ownerCompanyId, $externalId, $collectRunId) {
+                DB::statement('SELECT pg_advisory_xact_lock(hashtext(?))', [$n->contentHash]);
+
+                $existing = $this->findExisting($n, $sourceId, $ownerCompanyId, $externalId);
+
+                if ($existing === null) {
+                    // Строка всё ещё не найдена после нарушения уникальности — подлинная ошибка.
+                    throw new UniqueConstraintViolationException(
+                        'pgsql',
+                        'retry failed: row still not found after UniqueConstraintViolationException',
+                        [],
+                        new \PDOException('SQLSTATE[23505]'),
+                    );
+                }
+
+                return $this->refresh($existing, $n, $collectRunId);
+            });
+        }
     }
 
     private function isManualSource(int $sourceId): bool
@@ -64,7 +87,7 @@ class Deduplicator
         })();
     }
 
-    private function findExisting(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): ?Tender
+    protected function findExisting(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): ?Tender
     {
         /** @param Builder<Tender> $q */
         $scope = fn (Builder $q): Builder => $q
@@ -95,7 +118,7 @@ class Deduplicator
         return $scope(Tender::query())->where('content_hash', $n->contentHash)->first();
     }
 
-    private function create(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): Tender
+    protected function create(NormalizedTender $n, int $sourceId, ?int $ownerCompanyId, string $externalId): Tender
     {
         return Tender::create([
             'source_id' => $sourceId,
@@ -116,6 +139,8 @@ class Deduplicator
             'published_at' => $n->publishedAt,
             'deadline_at' => $n->deadlineAt,
             'okpd2' => $n->okpd2,
+            'ktru' => $n->ktru,
+            'extra' => $n->extra,
             'content_hash' => $n->contentHash,
             'first_seen_at' => now(),
             'last_seen_at' => now(),
@@ -158,10 +183,21 @@ class Deduplicator
             $changed = true;
         }
 
+        if (! $changed) {
+            // unchanged: ни одного UPDATE — last_seen_at двигается отложенным батчем
+            // через ImportRowCollector::flushLastSeen() (спека: unchanged-строки не пишут в refresh()).
+            return new DedupResult($tender, 'unchanged');
+        }
+
+        // updated: персистим содержательные поля + актуализируем метаданные ktru/extra и last_seen_at.
+        // ktru/extra — вне TRACKED_FIELDS (без changelog): обновляются попутно, только когда строку
+        // и так сохраняем из-за изменения content-полей.
+        $tender->ktru = $n->ktru;
+        $tender->extra = $n->extra;
         $tender->last_seen_at = now();
         $tender->save();
 
-        return new DedupResult($tender, $changed ? 'updated' : 'unchanged');
+        return new DedupResult($tender, 'updated');
     }
 
     /**

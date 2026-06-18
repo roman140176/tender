@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ns3:export xmlns:ns3="http://zakupki.gov.ru/223fz/export/1" xmlns="http://zakupki.gov.ru/223fz/export/1">
+  <ns3:purchaseNotice>
+    <purchaseNumber>32212345678</purchaseNumber>
+    <purchaseObjectName>Оказание услуг по уборке помещений</purchaseObjectName>
+    <publicationDate>2026-06-16T09:30:00+03:00</publicationDate>
+    <submissionCloseDate>2026-06-30T12:00:00+03:00</submissionCloseDate>
+    <customerFullName>ПАО Энергосбыт</customerFullName><customerInn>5024000123</customerInn><customerRegion>78</customerRegion>
+    <maxPrice>450000.00</maxPrice><okpd2Code>81.21.10</okpd2Code><ktruCode></ktruCode>
+  </ns3:purchaseNotice>
+</ns3:export>

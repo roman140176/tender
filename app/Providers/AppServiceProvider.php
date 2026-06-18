@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Adapters\Eis\EisGateway;
+use App\Adapters\Eis\SoapEisGateway;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Tenancy\TenantContext;
@@ -17,6 +19,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(TenantContext::class);
+
+        // ЕИС-адаптер: SoapEisGateway — реальный HTTP-транспорт
+        $this->app->bind(EisGateway::class, SoapEisGateway::class);
     }
 
     /**
@@ -32,5 +37,9 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::define('manage-tender-workflow', fn (User $user): bool => $user->company_id !== null
             && in_array($user->role, [UserRole::Admin, UserRole::Manager], true));
+
+        Gate::define('superadmin', fn (User $user): bool => $user->role === UserRole::Superadmin);
+
+        Gate::define('viewHorizon', fn (User $user): bool => $user->role === UserRole::Superadmin);
     }
 }

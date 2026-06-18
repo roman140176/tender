@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\SourceCollectController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CompanySourceController;
 use App\Http\Controllers\ImportController;
@@ -45,6 +46,11 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
 Route::middleware(['auth', 'can:view-tenders'])->group(function () {
     Route::get('tenders', [TenderController::class, 'index'])->name('tenders.index');
     Route::get('tenders/{companyTender}', [TenderController::class, 'show'])->name('tenders.show');
+});
+
+// runs вне can:view-tenders: суперадмин (company_id=null) проваливает gate, но контроллер
+// сам ветвит доступ по isSuperadmin (eisRuns суперадмину; company-scoped — остальным).
+Route::middleware('auth')->group(function () {
     Route::get('runs', [RunController::class, 'index'])->name('runs.index');
 });
 
@@ -52,6 +58,11 @@ Route::middleware(['auth', 'can:manage-tender-workflow'])->group(function () {
     Route::patch('tenders/{companyTender}/status', [TenderController::class, 'updateStatus'])->name('tenders.status');
     Route::post('tenders/{companyTender}/comments', [TenderController::class, 'storeComment'])->name('tenders.comment');
     Route::patch('tenders/{companyTender}/assignee', [TenderController::class, 'assign'])->name('tenders.assign');
+});
+
+Route::middleware(['auth', 'can:superadmin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('sources', [SourceCollectController::class, 'index'])->name('sources.index');
+    Route::post('sources/{source}/collect', [SourceCollectController::class, 'trigger'])->name('sources.collect');
 });
 
 require __DIR__.'/auth.php';

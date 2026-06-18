@@ -92,7 +92,7 @@ class Normalizer
             try {
                 $parsed = CarbonImmutable::createFromFormat('!'.$format, $value);
                 if ($parsed->format($format) === $value) {
-                    return $parsed;
+                    return $parsed->utc();
                 }
             } catch (\Throwable) {
                 // формат не совпал — пробуем следующий
@@ -100,7 +100,7 @@ class Normalizer
         }
 
         try {
-            return CarbonImmutable::parse($value);
+            return CarbonImmutable::parse($value)->utc();
         } catch (\Throwable) {
             return null;
         }

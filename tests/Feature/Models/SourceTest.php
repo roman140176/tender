@@ -1,5 +1,6 @@
 <?php
 
+use App\Adapters\Eis\EisAdapter;
 use App\Models\CompanySource;
 use App\Models\Source;
 use Database\Seeders\SourceSeeder;
@@ -27,12 +28,11 @@ it('не отдаёт config в сериализацию', function () {
         ->and(json_encode($array))->not->toContain('secret-123');
 });
 
-it('сидер идемпотентен и не затирает adapter_class', function () {
+it('сидер идемпотентен и задаёт канонический adapter_class', function () {
     $this->seed(SourceSeeder::class);
-    Source::where('code', 'eis')->update(['adapter_class' => 'App\\Adapters\\EisAdapter']);
 
     $this->seed(SourceSeeder::class);
 
     expect(Source::count())->toBe(2)
-        ->and(Source::where('code', 'eis')->value('adapter_class'))->toBe('App\\Adapters\\EisAdapter');
+        ->and(Source::where('code', 'eis')->value('adapter_class'))->toBe(EisAdapter::class);
 });

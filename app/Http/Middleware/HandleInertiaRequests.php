@@ -37,6 +37,7 @@ class HandleInertiaRequests extends Middleware
                     'manageCompany' => (bool) $request->user()?->can('manage-company'),
                     'viewTenders' => (bool) $request->user()?->can('view-tenders'),
                     'manageTenderWorkflow' => (bool) $request->user()?->can('manage-tender-workflow'),
+                    'superadmin' => (bool) $request->user()?->can('superadmin'),
                 ],
             ],
             'flash' => [

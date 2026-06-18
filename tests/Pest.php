@@ -24,10 +24,16 @@ pest()->extend(TestCase::class)
     ->in('Feature');
 
 pest()->extend(TestCase::class)
+    ->in('Unit/Eis');
+
+pest()->extend(TestCase::class)
     ->in('Unit/Import');
 
 pest()->extend(TestCase::class)
     ->in('Unit/Scoring');
+
+pest()->extend(TestCase::class)
+    ->in('Unit/Queue');
 
 /*
 |--------------------------------------------------------------------------
