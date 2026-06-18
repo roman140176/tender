@@ -39,6 +39,8 @@ class SoapEisGateway implements EisGateway
                         'individualPerson_token' => $token,
                         'Content-Type' => 'text/xml; charset=utf-8',
                         'SOAPAction' => '"getDocsByOrgRegion"',
+                    ])->withOptions([
+                        'allow_redirects' => ['protocols' => ['https']],
                     ])->withBody($xml, 'text/xml')->post($endpoint);
 
                     // HTTP 4xx/5xx → RequestException, чтобы провижиненный
@@ -67,6 +69,12 @@ class SoapEisGateway implements EisGateway
 
     public function downloadArchive(PackageRef $ref, string $destAbsolutePath): void
     {
+        // SSRF-защита: токен ЕИС форвардится в заголовке individualPerson_token,
+        // а archiveUrl приходит из тела SOAP-ответа (недоверенный источник).
+        // Без проверки схемы/хоста возможна утечка токена на сторонний хост
+        // (Guzzle RedirectMiddleware не вырезает кастомные заголовки) и SSRF.
+        $this->assertArchiveUrlAllowed($ref->archiveUrl);
+
         $dir = dirname($destAbsolutePath);
         if (! is_dir($dir)) {
             mkdir($dir, 0755, true);
@@ -74,7 +82,44 @@ class SoapEisGateway implements EisGateway
 
         Http::withHeaders([
             'individualPerson_token' => (string) config('eis.token'),
+        ])->withOptions([
+            // Лимит хопов + запрет https→http downgrade при редиректах,
+            // чтобы токен не утёк на сторонний / незащищённый хост.
+            'allow_redirects' => ['max' => 3, 'protocols' => ['https'], 'referer' => false],
         ])->sink($destAbsolutePath)->get($ref->archiveUrl)->throw();
+    }
+
+    /**
+     * Валидирует archiveUrl: схема https + хост из allowlist (суффикс-матч).
+     *
+     * @throws \RuntimeException при недопустимой схеме/хосте
+     */
+    private function assertArchiveUrlAllowed(string $archiveUrl): void
+    {
+        $scheme = parse_url($archiveUrl, PHP_URL_SCHEME);
+        $host = parse_url($archiveUrl, PHP_URL_HOST);
+
+        if ($scheme !== 'https' || ! is_string($host) || $host === '') {
+            throw new \RuntimeException("Недопустимый archiveUrl host/scheme: {$archiveUrl}");
+        }
+
+        $host = strtolower($host);
+
+        /** @var list<string> $allowed */
+        $allowed = (array) config('eis.allowed_archive_hosts', []);
+
+        foreach ($allowed as $allowedHost) {
+            $allowedHost = strtolower(trim((string) $allowedHost));
+            if ($allowedHost === '') {
+                continue;
+            }
+            // Точное совпадение ИЛИ поддомен (суффикс с разделителем-точкой).
+            if ($host === $allowedHost || str_ends_with($host, '.'.$allowedHost)) {
+                return;
+            }
+        }
+
+        throw new \RuntimeException("Недопустимый archiveUrl host/scheme: {$archiveUrl}");
     }
 
     public function fetchByReestrNumber(string $regNumber): ?string
@@ -88,6 +133,8 @@ class SoapEisGateway implements EisGateway
             'individualPerson_token' => $token,
             'Content-Type' => 'text/xml; charset=utf-8',
             'SOAPAction' => '"getDocsByReestrNumber"',
+        ])->withOptions([
+            'allow_redirects' => ['protocols' => ['https']],
         ])->withBody($xml, 'text/xml')->post($endpoint);
 
         // HTTP 4xx/5xx → RequestException (см. listPackages).

@@ -4,6 +4,7 @@ return [
     'endpoint' => env('EIS_ENDPOINT', 'https://int44.zakupki.gov.ru/eis-integration/services/getDocsIP'),
     'token' => env('EIS_TOKEN'),
     'storage_disk' => env('EIS_STORAGE_DISK', 'local'),
+    'allowed_archive_hosts' => array_filter(explode(',', (string) env('EIS_ALLOWED_ARCHIVE_HOSTS', 'zakupki.gov.ru'))),
     'backfill_days' => (int) env('EIS_BACKFILL_DAYS', 30),
     'chunk_archive_per_job' => true,
     'regions' => array_filter(explode(',', (string) env('EIS_REGIONS', '77,78'))),

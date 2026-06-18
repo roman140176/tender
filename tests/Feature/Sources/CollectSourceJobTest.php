@@ -169,3 +169,103 @@ it('CollectParams строится от now()-backfill_days если last_collec
     expect($capturedParams->regions)->toBe(['77']);
     expect($capturedParams->subsystemTypes)->toBe(['PRIZ']);
 });
+
+// ─── F3: throw в listPackages помечает run Error (не оставляет Running) ───
+
+it('F3: исключение в listPackages помечает run Error, не оставляя orphan Running', function () {
+    Bus::fake();
+
+    $source = eisSourceWithAdapter();
+
+    $gateway = Mockery::mock(EisGateway::class);
+    $gateway->shouldReceive('listPackages')->andThrow(new RuntimeException('network down'));
+    app()->bind(EisGateway::class, fn () => $gateway);
+
+    expect(fn () => (new CollectSourceJob($source->id, RunTrigger::Schedule->value))->handle())
+        ->toThrow(RuntimeException::class);
+
+    $run = SourceCollectRun::where('source_id', $source->id)->firstOrFail();
+    expect($run->status)->toBe(RunStatus::Error)
+        ->and($run->status)->not->toBe(RunStatus::Running)
+        ->and($run->finished_at)->not->toBeNull();
+});
+
+it('F3: после Error-рана re-run guard пропускает новый сбор', function () {
+    Bus::fake();
+
+    $source = eisSourceWithAdapter();
+
+    // Первый запуск падает → run Error
+    $failing = Mockery::mock(EisGateway::class);
+    $failing->shouldReceive('listPackages')->andThrow(new RuntimeException('network down'));
+    app()->bind(EisGateway::class, fn () => $failing);
+
+    expect(fn () => (new CollectSourceJob($source->id, RunTrigger::Schedule->value))->handle())
+        ->toThrow(RuntimeException::class);
+
+    expect(SourceCollectRun::where('source_id', $source->id)->count())->toBe(1);
+
+    // Второй запуск с нормальным пустым gateway → re-run guard пропускает (прежний Error)
+    $ok = fakeGatewayWithPackages([]);
+    app()->bind(EisGateway::class, fn () => $ok);
+
+    (new CollectSourceJob($source->id, RunTrigger::Schedule->value))->handle();
+
+    expect(SourceCollectRun::where('source_id', $source->id)->count())->toBe(2);
+});
+
+// ─── F4: finalizeRun не двигает last_collected_at при error_count>0 ───
+
+it('F4: finalizeRun НЕ двигает last_collected_at при error_count>0', function () {
+    $source = eisSourceWithAdapter();
+    $source->last_collected_at = null;
+    $source->save();
+
+    $run = SourceCollectRun::create([
+        'source_id' => $source->id,
+        'company_id' => null,
+        'trigger' => RunTrigger::Schedule,
+        'status' => RunStatus::Running,
+        'started_at' => now(),
+        'fetched_count' => 0,
+        'new_count' => 0,
+        'updated_count' => 0,
+        'error_count' => 2,
+    ]);
+
+    CollectSourceJob::finalizeRun($run->id, $source->id, '2026-06-18 10:00:00');
+
+    $run->refresh();
+    $source->refresh();
+
+    expect($run->status)->toBe(RunStatus::Ok)
+        ->and($run->finished_at)->not->toBeNull()
+        ->and($source->last_collected_at)->toBeNull();
+});
+
+it('F4: finalizeRun двигает last_collected_at при error_count=0', function () {
+    $source = eisSourceWithAdapter();
+    $source->last_collected_at = null;
+    $source->save();
+
+    $run = SourceCollectRun::create([
+        'source_id' => $source->id,
+        'company_id' => null,
+        'trigger' => RunTrigger::Schedule,
+        'status' => RunStatus::Running,
+        'started_at' => now(),
+        'fetched_count' => 0,
+        'new_count' => 0,
+        'updated_count' => 0,
+        'error_count' => 0,
+    ]);
+
+    CollectSourceJob::finalizeRun($run->id, $source->id, '2026-06-18 10:00:00');
+
+    $run->refresh();
+    $source->refresh();
+
+    expect($run->status)->toBe(RunStatus::Ok)
+        ->and($run->finished_at)->not->toBeNull()
+        ->and($source->last_collected_at?->toDateTimeString())->toBe('2026-06-18 10:00:00');
+});

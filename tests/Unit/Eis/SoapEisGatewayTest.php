@@ -261,3 +261,112 @@ it('downloadArchive вызывает Http sink с токеном', function () {
 
     @unlink($dest);
 });
+
+it('downloadArchive бросает RuntimeException при http-схеме (downgrade)', function () {
+    config([
+        'eis.token' => 'test-token',
+        'eis.allowed_archive_hosts' => ['zakupki.gov.ru'],
+    ]);
+
+    Http::fake(['*' => Http::response('zip-content', 200)]);
+
+    $ref = new PackageRef(
+        archiveUrl: 'http://int44.zakupki.gov.ru/eis-integration/download/some.zip',
+        region: '77',
+        subsystemType: 'PRIZ',
+        date: '2026-06-15',
+        lawType: LawType::Fz44,
+    );
+
+    $dest = sys_get_temp_dir().'/eis_test_'.uniqid().'.zip';
+    $gateway = new SoapEisGateway;
+
+    expect(fn () => $gateway->downloadArchive($ref, $dest))
+        ->toThrow(RuntimeException::class);
+
+    Http::assertNothingSent();
+    @unlink($dest);
+});
+
+it('downloadArchive бросает RuntimeException при стороннем хосте (SSRF)', function () {
+    config([
+        'eis.token' => 'test-token',
+        'eis.allowed_archive_hosts' => ['zakupki.gov.ru'],
+    ]);
+
+    Http::fake(['*' => Http::response('zip-content', 200)]);
+
+    $ref = new PackageRef(
+        archiveUrl: 'https://evil.example.com/a.zip',
+        region: '77',
+        subsystemType: 'PRIZ',
+        date: '2026-06-15',
+        lawType: LawType::Fz44,
+    );
+
+    $dest = sys_get_temp_dir().'/eis_test_'.uniqid().'.zip';
+    $gateway = new SoapEisGateway;
+
+    expect(fn () => $gateway->downloadArchive($ref, $dest))
+        ->toThrow(RuntimeException::class);
+
+    Http::assertNothingSent();
+    @unlink($dest);
+});
+
+it('downloadArchive отклоняет хост-суффикс-подделку (evilzakupki.gov.ru)', function () {
+    config([
+        'eis.token' => 'test-token',
+        'eis.allowed_archive_hosts' => ['zakupki.gov.ru'],
+    ]);
+
+    Http::fake(['*' => Http::response('zip-content', 200)]);
+
+    // 'zakupkiXgov.ru' НЕ должен матчиться суффиксом: zakupki.gov.ru без точки-разделителя
+    $ref = new PackageRef(
+        archiveUrl: 'https://evil-zakupki.gov.ru.attacker.com/a.zip',
+        region: '77',
+        subsystemType: 'PRIZ',
+        date: '2026-06-15',
+        lawType: LawType::Fz44,
+    );
+
+    $dest = sys_get_temp_dir().'/eis_test_'.uniqid().'.zip';
+    $gateway = new SoapEisGateway;
+
+    expect(fn () => $gateway->downloadArchive($ref, $dest))
+        ->toThrow(RuntimeException::class);
+
+    Http::assertNothingSent();
+    @unlink($dest);
+});
+
+it('downloadArchive успешно качает на allowlisted https-хост', function () {
+    config([
+        'eis.token' => 'test-token',
+        'eis.allowed_archive_hosts' => ['zakupki.gov.ru'],
+    ]);
+
+    Http::fake(['*' => Http::response('zip-content', 200)]);
+
+    $ref = new PackageRef(
+        archiveUrl: 'https://int44.zakupki.gov.ru/eis-integration/download/some.zip',
+        region: '77',
+        subsystemType: 'PRIZ',
+        date: '2026-06-15',
+        lawType: LawType::Fz44,
+    );
+
+    $dest = sys_get_temp_dir().'/eis_test_'.uniqid().'.zip';
+    $gateway = new SoapEisGateway;
+    $gateway->downloadArchive($ref, $dest);
+
+    expect(file_exists($dest))->toBeTrue();
+
+    Http::assertSent(function (Request $request) use ($ref) {
+        return $request->hasHeader('individualPerson_token', 'test-token')
+            && (string) $request->url() === $ref->archiveUrl;
+    });
+
+    @unlink($dest);
+});
