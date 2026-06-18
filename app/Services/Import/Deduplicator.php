@@ -139,6 +139,8 @@ class Deduplicator
             'published_at' => $n->publishedAt,
             'deadline_at' => $n->deadlineAt,
             'okpd2' => $n->okpd2,
+            'ktru' => $n->ktru,
+            'extra' => $n->extra,
             'content_hash' => $n->contentHash,
             'first_seen_at' => now(),
             'last_seen_at' => now(),
@@ -181,10 +183,21 @@ class Deduplicator
             $changed = true;
         }
 
+        if (! $changed) {
+            // unchanged: ни одного UPDATE — last_seen_at двигается отложенным батчем
+            // через ImportRowCollector::flushLastSeen() (спека: unchanged-строки не пишут в refresh()).
+            return new DedupResult($tender, 'unchanged');
+        }
+
+        // updated: персистим содержательные поля + актуализируем метаданные ktru/extra и last_seen_at.
+        // ktru/extra — вне TRACKED_FIELDS (без changelog): обновляются попутно, только когда строку
+        // и так сохраняем из-за изменения content-полей.
+        $tender->ktru = $n->ktru;
+        $tender->extra = $n->extra;
         $tender->last_seen_at = now();
         $tender->save();
 
-        return new DedupResult($tender, $changed ? 'updated' : 'unchanged');
+        return new DedupResult($tender, 'updated');
     }
 
     /**

@@ -3,6 +3,7 @@
 namespace App\Services\Import;
 
 use App\Models\Company;
+use App\Models\Tender;
 use Illuminate\Database\QueryException;
 
 class ImportRowCollector
@@ -17,6 +18,9 @@ class ImportRowCollector
 
     /** @var list<string> */
     public array $errorLines = [];
+
+    /** @var list<int> */
+    public array $unchangedIds = [];
 
     public function __construct(
         private readonly Normalizer $normalizer,
@@ -38,6 +42,7 @@ class ImportRowCollector
             match ($result->status) {
                 'created' => $this->new++,
                 'updated' => $this->updated++,
+                'unchanged' => $this->unchangedIds[] = $result->tender->id,
                 default => null,
             };
         } catch (NormalizationException $e) {
@@ -47,5 +52,19 @@ class ImportRowCollector
             $this->errors++;
             $this->errorLines[] = "строка {$lineNumber}: конфликт данных (повторите импорт)";
         }
+    }
+
+    /**
+     * Батч-обновление last_seen_at для unchanged-строк одним UPDATE.
+     * Вызывать после завершения обработки файла/чанка.
+     */
+    public function flushLastSeen(): void
+    {
+        if ($this->unchangedIds === []) {
+            return;
+        }
+
+        Tender::whereIn('id', $this->unchangedIds)->update(['last_seen_at' => now()]);
+        $this->unchangedIds = [];
     }
 }

@@ -41,6 +41,8 @@ class ManualImportService
                 default => $this->importSpreadsheet($file, $collector), // csv и xlsx — единый путь maatwebsite
             };
 
+            $collector->flushLastSeen();
+
             $run->update([
                 'status' => RunStatus::Ok,
                 'finished_at' => now(),

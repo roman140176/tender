@@ -4,6 +4,7 @@ use App\Models\Company;
 use App\Models\Source;
 use App\Models\Tender;
 use App\Services\Import\Deduplicator;
+use App\Services\Import\ImportRowCollector;
 use App\Services\Import\NormalizedTender;
 use App\Services\Import\Normalizer;
 
@@ -41,20 +42,32 @@ it('manual без owner_company_id запрещён', function () {
     app(Deduplicator::class)->process(normalized(), manualSource()->id, null);
 })->throws(InvalidArgumentException::class);
 
-it('идентичная строка повторно — unchanged, last_seen_at обновлён', function () {
+it('идентичная строка повторно — unchanged, last_seen_at НЕ обновляется refresh(), но двигается через flushLastSeen()', function () {
     $company = Company::factory()->create();
     $source = manualSource();
     $dedup = app(Deduplicator::class);
+    $normalizer = app(Normalizer::class);
 
     $dedup->process(normalized(), $source->id, $company->id);
     $tender = Tender::sole();
     $tender->forceFill(['last_seen_at' => now()->subDay()])->save();
+    $oldLastSeen = $tender->last_seen_at->toDateTimeString();
 
     $result = $dedup->process(normalized(), $source->id, $company->id);
 
     expect($result->status)->toBe('unchanged')
-        ->and(Tender::count())->toBe(1)
-        ->and(Tender::sole()->last_seen_at->isToday())->toBeTrue();
+        ->and(Tender::count())->toBe(1);
+
+    // refresh() НЕ вызывает save() при unchanged — last_seen_at не изменился
+    expect(Tender::sole()->last_seen_at->toDateTimeString())->toBe($oldLastSeen);
+
+    // flushLastSeen() через collector обновит батчем
+    $collector = new ImportRowCollector($normalizer, $dedup, $source->id, $company, null);
+    $collector->unchangedIds = [Tender::sole()->id];
+    $this->travelTo(now()->addMinutes(5));
+    $collector->flushLastSeen();
+
+    expect(Tender::sole()->last_seen_at->isToday())->toBeTrue();
 });
 
 it('изменение цены и дедлайна — updated с diff в tender_changes', function () {
