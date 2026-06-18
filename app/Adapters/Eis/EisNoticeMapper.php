@@ -3,6 +3,11 @@
 namespace App\Adapters\Eis;
 
 use App\Enums\LawType;
+use App\Enums\TenderSourceStatus;
+use App\Services\Import\Canonicalizer;
+use App\Services\Import\NormalizationException;
+use App\Services\Import\NormalizedTender;
+use Carbon\CarbonImmutable;
 
 class EisNoticeMapper
 {
@@ -73,6 +78,95 @@ class EisNoticeMapper
             rootElement: $rootElement,
             data: $data,
             regNumber: $regNumber,
+        );
+    }
+
+    /**
+     * Преобразовать RawTender в NormalizedTender.
+     *
+     * @throws NormalizationException при пустом title
+     */
+    public function toNormalizedTender(RawTender $raw): NormalizedTender
+    {
+        $data = $raw->data;
+
+        // title обязателен
+        $title = trim($data['title'] ?? '');
+        if ($title === '') {
+            throw new NormalizationException('Пустое название закупки в ЕИС-извещении.');
+        }
+
+        // price: числовая и >= 0 → decimal-строка, иначе null (0 валиден)
+        $priceRaw = trim($data['price'] ?? '');
+        $price = null;
+        if ($priceRaw !== '' && is_numeric($priceRaw) && (float) $priceRaw >= 0) {
+            $price = number_format((float) $priceRaw, 2, '.', '');
+        }
+
+        // Даты — offset-aware → UTC
+        $publishedAt = null;
+        if (! empty($data['publishedAt'])) {
+            try {
+                $publishedAt = CarbonImmutable::parse($data['publishedAt'])->utc();
+            } catch (\Throwable) {
+                $publishedAt = null;
+            }
+        }
+
+        $deadlineAt = null;
+        if (! empty($data['deadlineAt'])) {
+            try {
+                $deadlineAt = CarbonImmutable::parse($data['deadlineAt'])->utc();
+            } catch (\Throwable) {
+                $deadlineAt = null;
+            }
+        }
+
+        // sourceStatus: Cancel в rootElement → Cancelled, иначе Active
+        $sourceStatus = str_contains($raw->rootElement, 'Cancel')
+            ? TenderSourceStatus::Cancelled
+            : TenderSourceStatus::Active;
+
+        // sourceUrl по шаблону из конфига
+        $sourceUrl = $raw->regNumber !== null
+            ? sprintf(config('eis.source_url_template'), $raw->regNumber)
+            : '';
+
+        // okpd2 и ktru — уже списки из extract()
+        $okpd2 = $data['okpd2'] ?? [];
+        $ktru = $data['ktru'] ?? [];
+
+        $customerName = ($data['customerName'] ?? '') !== '' ? $data['customerName'] : null;
+        $customerInn = ($data['customerInn'] ?? '') !== '' ? $data['customerInn'] : null;
+        $region = ($data['region'] ?? '') !== '' ? $data['region'] : null;
+
+        $contentHash = Canonicalizer::contentHash(
+            $title,
+            $customerName,
+            $customerInn,
+            $publishedAt?->format('Y-m-d'),
+            $price,
+        );
+
+        return new NormalizedTender(
+            title: $title,
+            description: null,
+            customerName: $customerName,
+            customerInn: $customerInn,
+            region: $region,
+            price: $price,
+            currency: 'RUB',
+            lawType: $raw->lawType,
+            procedureType: null,
+            sourceStatus: $sourceStatus,
+            publishedAt: $publishedAt,
+            deadlineAt: $deadlineAt,
+            sourceUrl: $sourceUrl,
+            number: $raw->regNumber,
+            okpd2: $okpd2,
+            contentHash: $contentHash,
+            ktru: $ktru,
+            extra: ['rootElement' => $raw->rootElement],
         );
     }
 }
