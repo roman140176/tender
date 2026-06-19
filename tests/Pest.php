@@ -5,6 +5,8 @@ use App\Models\Company;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Notifications\FakeMaxGateway;
+use App\Notifications\MaxGateway;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -21,6 +23,9 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        $this->app->instance(MaxGateway::class, new FakeMaxGateway);
+    })
     ->in('Feature');
 
 pest()->extend(TestCase::class)
@@ -34,6 +39,9 @@ pest()->extend(TestCase::class)
 
 pest()->extend(TestCase::class)
     ->in('Unit/Queue');
+
+pest()->extend(TestCase::class)
+    ->in('Unit/Max');
 
 /*
 |--------------------------------------------------------------------------

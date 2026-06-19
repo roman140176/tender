@@ -8,4 +8,5 @@ enum NotificationChannel: string
     case Email = 'email';
     case Web = 'web';
     case Webhook = 'webhook';
+    case Max = 'max';
 }

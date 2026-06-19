@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'max' => [
+        'bot_token' => env('MAX_BOT_TOKEN'),
+        'api_base' => env('MAX_API_BASE', 'https://platform-api.max.ru'),
+    ],
+
 ];
