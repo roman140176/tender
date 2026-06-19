@@ -159,6 +159,31 @@ it('ре-триггер: score пересёк порог снизу вверх �
     expect(decider()->shouldNotify($match))->toBeTrue();
 });
 
+it('игнорирует sent-лог с тем же профилем+закупкой, но ЧУЖИМ company_id → слать (как при отсутствии лога)', function () {
+    $match = deciderFixture();
+    $otherCompany = Company::factory()->create();
+
+    // Подложный/повреждённый лог: тот же search_profile_id + tender_id, но другая компания.
+    NotificationLog::create([
+        'company_id' => $otherCompany->id, // чужая компания
+        'tender_id' => $match->tender_id,
+        'search_profile_id' => $match->search_profile_id,
+        'channel' => NotificationChannel::Max,
+        'recipient' => '999999',
+        'status' => NotificationStatus::Sent,
+        'payload' => [
+            'price' => '1000000.00',
+            'deadline_at' => Carbon::parse('2026-07-01 18:00:00')->toIso8601String(),
+            'source_status' => 'active',
+            'score' => 75,
+        ],
+        'sent_at' => now(),
+    ]);
+
+    // Для нашей компании прошлого лога нет → решатель должен вернуть true.
+    expect(decider()->shouldNotify($match))->toBeTrue();
+});
+
 it('score был выше порога и остался → НЕ слать (нет пересечения снизу)', function () {
     $match = deciderFixture(score: 80, threshold: 60);
     pastSentLog($match, [

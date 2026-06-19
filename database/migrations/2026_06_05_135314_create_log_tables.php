@@ -20,6 +20,9 @@ return new class extends Migration
             $table->timestamp('sent_at')->nullable();
             $table->text('error')->nullable();
             $table->timestamps();
+            // Намеренно НЕ unique: §9 (анти-дубль) допускает несколько sent-строк по одной
+            // паре (профиль × закупка) — по одной на каждый легитимный ре-триггер. UNIQUE
+            // сломал бы этот дизайн. Индекс — только для быстрого поиска последнего лога.
             $table->index(['company_id', 'tender_id', 'search_profile_id', 'channel'], 'notification_dedup_idx');
         });
 
