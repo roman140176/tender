@@ -1,3 +1,5 @@
+> ⚠️ **SUPERSEDED (2026-06-19).** Канал A7 переориентирован Telegram → MAX. Актуальный план: `docs/superpowers/plans/2026-06-19-a7-max-notifications.md`. Этот файл сохранён как история Telegram-версии — **НЕ исполнять**.
+
 # A7 — Telegram-уведомления + ручной запуск радара + дашборд — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: используй `superpowers:subagent-driven-development` (рекомендуется) или `superpowers:executing-plans` для исполнения задача-за-задачей. Шаги в чекбокс-синтаксисе (`- [ ]`).
