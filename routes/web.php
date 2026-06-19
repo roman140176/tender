@@ -41,6 +41,7 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
     Route::patch('sources/{source}', [CompanySourceController::class, 'update'])->name('sources.update');
     Route::get('company', [CompanySettingsController::class, 'edit'])->name('company.edit');
     Route::patch('company', [CompanySettingsController::class, 'update'])->name('company.update');
+    Route::post('company/test-message', [CompanySettingsController::class, 'sendTestMessage'])->name('company.test-message');
     Route::get('imports/template', [ImportController::class, 'template'])->name('imports.template');
     Route::get('imports', [ImportController::class, 'index'])->name('imports.index');
     Route::post('imports', [ImportController::class, 'store'])->name('imports.store');

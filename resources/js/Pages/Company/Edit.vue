@@ -5,7 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TagInput from '@/Components/TagInput.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 
 const props = defineProps({ company: Object });
 
@@ -19,7 +19,12 @@ const form = useForm({
     services: props.company.services ?? [],
     notification_email: props.company.notification_email ?? '',
     telegram_chat_id: props.company.telegram_chat_id ?? '',
+    max_chat_id: props.company.max_chat_id ?? '',
 });
+
+const sendTestMessage = () => {
+    router.post(route('company.test-message'), {}, { preserveScroll: true });
+};
 </script>
 
 <template>
@@ -89,6 +94,19 @@ const form = useForm({
                             <InputLabel for="telegram_chat_id" value="Telegram chat_id" />
                             <TextInput id="telegram_chat_id" v-model="form.telegram_chat_id" class="mt-1 block w-full" />
                             <InputError class="mt-2" :message="form.errors.telegram_chat_id" />
+                        </div>
+                        <div>
+                            <InputLabel for="max_chat_id" value="MAX chat_id" />
+                            <TextInput id="max_chat_id" v-model="form.max_chat_id" class="mt-1 block w-full" />
+                            <InputError class="mt-2" :message="form.errors.max_chat_id" />
+                            <button
+                                type="button"
+                                class="mt-2 text-sm text-indigo-600 hover:underline disabled:opacity-50"
+                                :disabled="!form.max_chat_id"
+                                @click="sendTestMessage"
+                            >
+                                Отправить тестовое
+                            </button>
                         </div>
                     </div>
 
