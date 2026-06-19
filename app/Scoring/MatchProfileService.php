@@ -5,6 +5,7 @@ namespace App\Scoring;
 use App\Enums\RelevanceLevel;
 use App\Enums\RunStatus;
 use App\Enums\RunTrigger;
+use App\Jobs\NotifyJob;
 use App\Models\CompanySource;
 use App\Models\CompanyTender;
 use App\Models\Keyword;
@@ -87,8 +88,12 @@ final class MatchProfileService
                             continue;
                         }
 
-                        $this->persist($companyId, (int) $tender->id, (int) $profile->id, (int) $run->id, $result);
+                        $match = $this->persist($companyId, (int) $tender->id, (int) $profile->id, (int) $run->id, $result);
                         $matched++;
+
+                        if ($result->score >= (int) $profile->notification_threshold) {
+                            NotifyJob::dispatch($match->id);
+                        }
                     } catch (Throwable $e) {
                         $errors++;
                         $errorLines[] = "tender {$tender->id}: ".mb_substr($e->getMessage(), 0, 200);
@@ -127,12 +132,12 @@ final class MatchProfileService
         return $ids;
     }
 
-    private function persist(int $companyId, int $tenderId, int $profileId, int $runId, ScoreResult $result): void
+    private function persist(int $companyId, int $tenderId, int $profileId, int $runId, ScoreResult $result): TenderMatch
     {
-        DB::transaction(function () use ($companyId, $tenderId, $profileId, $runId, $result): void {
+        return DB::transaction(function () use ($companyId, $tenderId, $profileId, $runId, $result): TenderMatch {
             DB::statement('SELECT pg_advisory_xact_lock(hashtext(?))', ['ct:'.$companyId.':'.$tenderId]);
 
-            TenderMatch::withoutTenancy()->updateOrCreate(
+            $match = TenderMatch::withoutTenancy()->updateOrCreate(
                 ['search_profile_id' => $profileId, 'tender_id' => $tenderId],
                 [
                     'company_id' => $companyId,
@@ -148,6 +153,8 @@ final class MatchProfileService
             );
 
             $this->recomputeBest($companyId, $tenderId, createIfMissing: true);
+
+            return $match;
         });
     }
 
