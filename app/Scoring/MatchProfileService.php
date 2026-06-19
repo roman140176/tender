@@ -6,6 +6,7 @@ use App\Enums\RelevanceLevel;
 use App\Enums\RunStatus;
 use App\Enums\RunTrigger;
 use App\Jobs\NotifyJob;
+use App\Models\Company;
 use App\Models\CompanySource;
 use App\Models\CompanyTender;
 use App\Models\Keyword;
@@ -36,6 +37,12 @@ final class MatchProfileService
         $companyId = (int) $profile->company_id;
         $enabledSourceIds = $this->enabledSourceIds($companyId);
 
+        // chat_id компании резолвим ОДИН раз за прогон (не в чанке — без N+1).
+        // Company без BelongsToCompany-scope, поэтому find() работает без TenantContext.
+        // Если канал не настроен (компания не прошла онбординг) — NotifyJob не диспатчим:
+        // иначе джоб ушёл бы в no-chat_id-ветку и плодил Failed-логи на каждый матч каждый прогон.
+        $notifyChatId = Company::find($companyId)?->max_chat_id;
+
         $run = RadarRun::create([
             'company_id' => $companyId,
             'search_profile_id' => $profile->id,
@@ -55,7 +62,7 @@ final class MatchProfileService
 
         $this->candidates->build($profile, $keywords, $enabledSourceIds, $sinceUpdatedAt)
             ->chunkById(500, function (Collection $tenders) use (
-                &$processed, &$matched, &$errors, &$errorLines, $profile, $keywords, $weights, $companyId, $enabledSourceIds, $run
+                &$processed, &$matched, &$errors, &$errorLines, $profile, $keywords, $weights, $companyId, $enabledSourceIds, $run, $notifyChatId
             ): void {
                 foreach ($tenders as $tender) {
                     $processed++;
@@ -91,7 +98,7 @@ final class MatchProfileService
                         $match = $this->persist($companyId, (int) $tender->id, (int) $profile->id, (int) $run->id, $result);
                         $matched++;
 
-                        if ($result->score >= (int) $profile->notification_threshold) {
+                        if (filled($notifyChatId) && $result->score >= (int) $profile->notification_threshold) {
                             NotifyJob::dispatch($match->id);
                         }
                     } catch (Throwable $e) {

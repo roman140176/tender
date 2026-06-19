@@ -16,11 +16,15 @@ use App\Models\TenderMatch;
 use App\Scoring\MatchProfileService;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     Carbon::setTestNow('2026-06-13 12:00:00');
     // Источник manual должен существовать (его сервис добавляет к включённым автоматически).
     Source::factory()->create(['code' => 'manual']);
+    // Чистый scoring-тест не должен зависеть от redis: NotifyJob уходит на connection 'notifications'
+    // (driver=redis) и не падает в sync-очередь теста. Fake убирает скрытую redis-зависимость.
+    Queue::fake();
 });
 
 afterEach(fn () => Carbon::setTestNow());
