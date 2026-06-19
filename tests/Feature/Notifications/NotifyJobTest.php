@@ -130,17 +130,23 @@ it('антидубль: повтор без изменений → выход б
         ->and(NotificationLog::withoutTenancy()->count())->toBe(1); // новых логов нет
 });
 
-it('tenant-изоляция: джоб матча компании А шлёт на chat_id А, не Б', function () {
+it('tenant-изоляция: каждый джоб шлёт только на chat_id своей компании', function () {
     $matchA = notifyFixture(chatId: 'AAA');
     $matchB = notifyFixture(chatId: 'BBB');
 
+    // Запускаем ОБА джоба — доказываем, что каждый адресует свою компанию,
+    // а не наоборот (chat_id берётся из company матча, не из чужой).
     (new NotifyJob($matchA->id))->handle($this->fakeGateway, app(NotificationDecider::class));
+    (new NotifyJob($matchB->id))->handle($this->fakeGateway, app(NotificationDecider::class));
 
-    expect($this->fakeGateway->sent)->toHaveCount(1)
-        ->and($this->fakeGateway->sent[0]['chatId'])->toBe('AAA');
+    expect($this->fakeGateway->sent)->toHaveCount(2)
+        ->and($this->fakeGateway->messagesTo('AAA'))->toHaveCount(1)
+        ->and($this->fakeGateway->messagesTo('BBB'))->toHaveCount(1);
 
-    // Лог записан под компанию А, не Б
-    $log = NotificationLog::withoutTenancy()->sole();
-    expect($log->company_id)->toBe($matchA->company_id)
-        ->and($log->company_id)->not->toBe($matchB->company_id);
+    // Каждый лог записан под СВОЮ компанию (никакого перекрёстного company_id).
+    $logA = NotificationLog::withoutTenancy()->where('recipient', 'AAA')->sole();
+    $logB = NotificationLog::withoutTenancy()->where('recipient', 'BBB')->sole();
+    expect($logA->company_id)->toBe($matchA->company_id)
+        ->and($logB->company_id)->toBe($matchB->company_id)
+        ->and($logA->company_id)->not->toBe($logB->company_id);
 });
