@@ -43,6 +43,9 @@ pest()->extend(TestCase::class)
 pest()->extend(TestCase::class)
     ->in('Unit/Max');
 
+pest()->extend(TestCase::class)
+    ->in('Unit/Notifications');
+
 /*
 |--------------------------------------------------------------------------
 | Expectations
