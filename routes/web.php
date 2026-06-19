@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\SourceCollectController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CompanySourceController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
@@ -11,15 +12,14 @@ use App\Http\Controllers\RunController;
 use App\Http\Controllers\SearchProfileController;
 use App\Http\Controllers\TenderController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
