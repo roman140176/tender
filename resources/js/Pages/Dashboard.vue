@@ -119,9 +119,9 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                                         {{ ct.tender?.title ?? '—' }}
                                     </Link>
                                 </td>
-                                <td class="px-3 py-2 text-gray-600">{{ ct.tender.region ?? '—' }}</td>
-                                <td class="px-3 py-2 text-gray-600">{{ money(ct.tender.price) }}</td>
-                                <td class="px-3 py-2 text-gray-600">{{ date(ct.tender.deadline_at) }}</td>
+                                <td class="px-3 py-2 text-gray-600">{{ ct.tender?.region ?? '—' }}</td>
+                                <td class="px-3 py-2 text-gray-600">{{ money(ct.tender?.price) }}</td>
+                                <td class="px-3 py-2 text-gray-600">{{ date(ct.tender?.deadline_at) }}</td>
                                 <td class="px-3 py-2">
                                     <span class="rounded px-2 py-1 text-xs font-medium" :class="levelClass(ct.best_level)">{{ ct.best_score }}</span>
                                 </td>
@@ -150,9 +150,9 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                                         {{ ct.tender?.title ?? '—' }}
                                     </Link>
                                 </td>
-                                <td class="px-3 py-2 text-gray-600">{{ ct.tender.region ?? '—' }}</td>
-                                <td class="px-3 py-2 text-gray-600">{{ money(ct.tender.price) }}</td>
-                                <td class="px-3 py-2 font-medium text-gray-800">{{ date(ct.tender.deadline_at) }}</td>
+                                <td class="px-3 py-2 text-gray-600">{{ ct.tender?.region ?? '—' }}</td>
+                                <td class="px-3 py-2 text-gray-600">{{ money(ct.tender?.price) }}</td>
+                                <td class="px-3 py-2 font-medium text-gray-800">{{ date(ct.tender?.deadline_at) }}</td>
                             </tr>
                             <tr v-if="!upcomingDeadlines.length"><td colspan="4" class="px-3 py-4 text-gray-400">Предстоящих дедлайнов нет.</td></tr>
                         </tbody>
