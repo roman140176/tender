@@ -30,7 +30,14 @@ final class MaxNotificationPresenter
         $sourceName = $source !== null
             ? self::esc((string) $source->name)
             : 'не указан';
-        $url = self::esc((string) $tender->source_url);
+        // source_url — ингестированные данные из ЕИС/маркетплейсов (подвержены влиянию
+        // источника). htmlspecialchars защищает от breakout'а атрибута, но не от опасной
+        // схемы (javascript:/data:). Ссылку делаем кликабельной только для http(s);
+        // иначе показываем URL как экранированный текст (без <a href>).
+        $rawUrl = (string) $tender->source_url;
+        $urlScheme = strtolower((string) parse_url($rawUrl, PHP_URL_SCHEME));
+        $urlIsSafe = in_array($urlScheme, ['http', 'https'], true);
+        $url = self::esc($rawUrl);
 
         $lines = [];
         $lines[] = '<b>🔔 '.$title.'</b>';
@@ -62,7 +69,9 @@ final class MaxNotificationPresenter
         $lines[] = '';
         $lines[] = '<b>Рекомендация:</b> '.self::esc($match->action_recommendation->label());
         $lines[] = '';
-        $lines[] = '<a href="'.$url.'">Открыть закупку</a>';
+        $lines[] = $urlIsSafe
+            ? '<a href="'.$url.'">Открыть закупку</a>'
+            : $url;
 
         return implode("\n", $lines);
     }

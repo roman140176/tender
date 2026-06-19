@@ -59,6 +59,59 @@ it('рендерит все поля §14.1 детерминированно', f
         ->and($text)->toContain('https://zakupki.gov.ru/notice/0173200001426000001');
 });
 
+it('не рендерит ссылку для не-http(s) source_url (allowlist схемы), показывает как текст', function () {
+    $source = new Source(['code' => 'eis', 'name' => 'ЕИС']);
+    $tender = new Tender([
+        'title' => 'Опасный URL',
+        'region' => 'Москва',
+        'price' => '100.00',
+        'deadline_at' => Carbon::parse('2026-07-01 18:00:00'),
+        'source_url' => 'javascript:alert(1)',
+    ]);
+    $tender->setRelation('source', $source);
+
+    $match = new TenderMatch([
+        'score' => 75,
+        'level' => RelevanceLevel::Medium,
+        'action_recommendation' => ActionRecommendation::ReviewDocs,
+        'reason' => [],
+        'risk_flags' => [],
+    ]);
+    $match->setRelation('tender', $tender);
+
+    $text = MaxNotificationPresenter::render($match);
+
+    // Не должно быть кликабельной ссылки на javascript:-схему
+    expect($text)->not->toContain('<a href=')
+        // URL всё равно показан как экранированный текст
+        ->and($text)->toContain('javascript:alert(1)');
+});
+
+it('рендерит ссылку только для http(s) source_url', function () {
+    $source = new Source(['code' => 'eis', 'name' => 'ЕИС']);
+    $tender = new Tender([
+        'title' => 'Нормальный URL',
+        'region' => 'Москва',
+        'price' => '100.00',
+        'deadline_at' => Carbon::parse('2026-07-01 18:00:00'),
+        'source_url' => 'https://zakupki.gov.ru/notice/123',
+    ]);
+    $tender->setRelation('source', $source);
+
+    $match = new TenderMatch([
+        'score' => 75,
+        'level' => RelevanceLevel::Medium,
+        'action_recommendation' => ActionRecommendation::ReviewDocs,
+        'reason' => [],
+        'risk_flags' => [],
+    ]);
+    $match->setRelation('tender', $tender);
+
+    $text = MaxNotificationPresenter::render($match);
+
+    expect($text)->toContain('<a href="https://zakupki.gov.ru/notice/123">Открыть закупку</a>');
+});
+
 it('подставляет заглушки при null-полях', function () {
     $source = new Source(['code' => 'manual', 'name' => 'Ручной импорт']);
     $tender = new Tender([

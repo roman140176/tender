@@ -24,7 +24,11 @@ final class NotificationDecider
 
     public function shouldNotify(TenderMatch $match): bool
     {
+        // company_id избыточен (search_profile_id глобально уникален одной компании),
+        // но явный предикат надёжнее/аудируемее и совпадает с паттерном фичи —
+        // лог другой компании по тем же profile+tender не должен влиять на решение.
         $last = NotificationLog::withoutTenancy()
+            ->where('company_id', $match->company_id)
             ->where('search_profile_id', $match->search_profile_id)
             ->where('tender_id', $match->tender_id)
             ->where('channel', NotificationChannel::Max)
@@ -48,6 +52,9 @@ final class NotificationDecider
 
     private function priceChanged(?string $current, mixed $previous): bool
     {
+        // Сознательная консервативность: если цена была известна, а стала null
+        // (источник временно вернул пусто), НЕ считаем это ре-триггером — чтобы
+        // не плодить шум на транзиентных null'ах источника. (Ревью одобрило.)
         if ($current === null) {
             return false;
         }

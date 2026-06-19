@@ -143,7 +143,7 @@ return [
                 'maxJobs' => 0,
                 'memory' => 128,
                 'tries' => 1,
-                'timeout' => 30,
+                'timeout' => 60, // = NotifyJob::$timeout; < retry_after=90 (инвариант)
                 'nice' => 0,
             ],
         ],
@@ -185,7 +185,7 @@ return [
                 'maxJobs' => 0,
                 'memory' => 128,
                 'tries' => 1,
-                'timeout' => 30,
+                'timeout' => 60, // = NotifyJob::$timeout; < retry_after=90 (инвариант)
                 'nice' => 0,
             ],
         ],
