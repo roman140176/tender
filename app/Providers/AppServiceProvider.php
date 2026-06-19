@@ -6,6 +6,8 @@ use App\Adapters\Eis\EisGateway;
 use App\Adapters\Eis\SoapEisGateway;
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Notifications\HttpMaxGateway;
+use App\Notifications\MaxGateway;
 use App\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Vite;
@@ -22,6 +24,9 @@ class AppServiceProvider extends ServiceProvider
 
         // ЕИС-адаптер: SoapEisGateway — реальный HTTP-транспорт
         $this->app->bind(EisGateway::class, SoapEisGateway::class);
+
+        // MAX-транспорт: HttpMaxGateway — реальный MAX Bot API (A7)
+        $this->app->bind(MaxGateway::class, HttpMaxGateway::class);
     }
 
     /**

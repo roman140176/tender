@@ -3,22 +3,23 @@
 use App\Http\Controllers\Admin\SourceCollectController;
 use App\Http\Controllers\CompanySettingsController;
 use App\Http\Controllers\CompanySourceController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RadarRunController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SearchProfileController;
 use App\Http\Controllers\TenderController;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
 
 Route::get('/', function () {
     return redirect()->route(auth()->check() ? 'dashboard' : 'login');
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware('auth')
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -32,12 +33,15 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
         ->parameters(['profiles' => 'profile']);
     Route::post('profiles/{profile}/keywords', [KeywordController::class, 'store'])->name('profiles.keywords.store');
     Route::delete('keywords/{keyword}', [KeywordController::class, 'destroy'])->name('keywords.destroy');
+    Route::post('profiles/run-company', [RadarRunController::class, 'triggerCompany'])->name('profiles.run-company');
+    Route::post('profiles/{profile}/run', [RadarRunController::class, 'trigger'])->name('profiles.run');
     Route::post('profiles/{profile}/activate', [SearchProfileController::class, 'activate'])->name('profiles.activate');
     Route::post('profiles/{profile}/deactivate', [SearchProfileController::class, 'deactivate'])->name('profiles.deactivate');
     Route::get('sources', [CompanySourceController::class, 'index'])->name('sources.index');
     Route::patch('sources/{source}', [CompanySourceController::class, 'update'])->name('sources.update');
     Route::get('company', [CompanySettingsController::class, 'edit'])->name('company.edit');
     Route::patch('company', [CompanySettingsController::class, 'update'])->name('company.update');
+    Route::post('company/test-message', [CompanySettingsController::class, 'sendTestMessage'])->name('company.test-message');
     Route::get('imports/template', [ImportController::class, 'template'])->name('imports.template');
     Route::get('imports', [ImportController::class, 'index'])->name('imports.index');
     Route::post('imports', [ImportController::class, 'store'])->name('imports.store');

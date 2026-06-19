@@ -27,6 +27,7 @@ class CompanySettingsRequest extends FormRequest
             'services.*' => ['string', 'max:255'],
             'notification_email' => ['nullable', 'email', 'max:255'],
             'telegram_chat_id' => ['nullable', 'string', 'max:64'],
+            'max_chat_id' => ['nullable', 'string', 'max:64'],
         ];
     }
 

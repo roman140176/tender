@@ -50,6 +50,7 @@ return [
     'waits' => [
         'redis:default' => 60,
         'redis:collect' => 300,
+        'redis:notifications' => 60,
     ],
 
     /*
@@ -132,6 +133,19 @@ return [
                 'timeout' => 590,
                 'nice' => 0,
             ],
+            'supervisor-notifications' => [
+                'connection' => 'notifications', // соединение notifications из config/queue.php (как redis-long/collect в A6)
+                'queue' => ['notifications'],
+                'balance' => 'auto',
+                'autoScalingStrategy' => 'time',
+                'maxProcesses' => 3,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 128,
+                'tries' => 1,
+                'timeout' => 30,
+                'nice' => 0,
+            ],
         ],
 
         'local' => [
@@ -159,6 +173,19 @@ return [
                 'memory' => 256,
                 'tries' => 1,
                 'timeout' => 590,
+                'nice' => 0,
+            ],
+            'supervisor-notifications' => [
+                'connection' => 'notifications',
+                'queue' => ['notifications'],
+                'balance' => 'auto',
+                'autoScalingStrategy' => 'time',
+                'maxProcesses' => 2,
+                'maxTime' => 0,
+                'maxJobs' => 0,
+                'memory' => 128,
+                'tries' => 1,
+                'timeout' => 30,
                 'nice' => 0,
             ],
         ],

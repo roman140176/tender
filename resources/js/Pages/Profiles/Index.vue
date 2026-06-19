@@ -10,6 +10,14 @@ const destroy = (profile) => {
         router.delete(route('profiles.destroy', profile.id));
     }
 };
+
+const runProfile = (profile) => {
+    router.post(route('profiles.run', profile.id), {}, { preserveScroll: true });
+};
+
+const runCompany = () => {
+    router.post(route('profiles.run-company'), {}, { preserveScroll: true });
+};
 </script>
 
 <template>
@@ -19,9 +27,18 @@ const destroy = (profile) => {
         <template #header>
             <div class="flex items-center justify-between">
                 <h2 class="text-xl font-semibold leading-tight text-gray-800">Направления поиска</h2>
-                <Link :href="route('profiles.create')">
-                    <PrimaryButton>Добавить направление</PrimaryButton>
-                </Link>
+                <div class="flex items-center gap-3">
+                    <button
+                        type="button"
+                        class="rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100"
+                        @click="runCompany"
+                    >
+                        Запустить радар
+                    </button>
+                    <Link :href="route('profiles.create')">
+                        <PrimaryButton>Добавить направление</PrimaryButton>
+                    </Link>
+                </div>
             </div>
         </template>
 
@@ -63,6 +80,12 @@ const destroy = (profile) => {
                                 <td class="px-6 py-4">{{ profile.keywords_count }}</td>
                                 <td class="px-6 py-4">{{ profile.notification_threshold }}</td>
                                 <td class="px-6 py-4 text-right">
+                                    <button
+                                        class="mr-4 text-sm text-indigo-600 hover:underline"
+                                        @click="runProfile(profile)"
+                                    >
+                                        Запустить
+                                    </button>
                                     <button class="text-sm text-red-600 hover:underline" @click="destroy(profile)">
                                         Удалить
                                     </button>
