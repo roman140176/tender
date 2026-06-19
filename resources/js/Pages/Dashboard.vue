@@ -116,7 +116,7 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                             <tr v-for="ct in highPriority" :key="'h' + ct.id" class="hover:bg-gray-50">
                                 <td class="px-3 py-2">
                                     <Link :href="route('tenders.show', ct.id)" class="font-medium text-indigo-600 hover:underline">
-                                        {{ ct.tender.title }}
+                                        {{ ct.tender?.title ?? '—' }}
                                     </Link>
                                 </td>
                                 <td class="px-3 py-2 text-gray-600">{{ ct.tender.region ?? '—' }}</td>
@@ -147,7 +147,7 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                             <tr v-for="ct in upcomingDeadlines" :key="'d' + ct.id" class="hover:bg-gray-50">
                                 <td class="px-3 py-2">
                                     <Link :href="route('tenders.show', ct.id)" class="font-medium text-indigo-600 hover:underline">
-                                        {{ ct.tender.title }}
+                                        {{ ct.tender?.title ?? '—' }}
                                     </Link>
                                 </td>
                                 <td class="px-3 py-2 text-gray-600">{{ ct.tender.region ?? '—' }}</td>
@@ -167,6 +167,7 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                             <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
                                 <tr>
                                     <th class="px-3 py-2">Направление</th>
+                                    <th class="px-3 py-2">Триггер</th>
                                     <th class="px-3 py-2">Статус</th>
                                     <th class="px-3 py-2">Обраб./Матчей</th>
                                     <th class="px-3 py-2">Начало</th>
@@ -175,11 +176,12 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                             <tbody class="divide-y bg-white">
                                 <tr v-for="r in recentRuns.radar" :key="'rr' + r.id">
                                     <td class="px-3 py-2">{{ r.searchProfile?.name ?? '—' }}</td>
+                                    <td class="px-3 py-2 text-gray-600">{{ triggerLabel(r.trigger) }}</td>
                                     <td class="px-3 py-2" :class="statusClass(r.status)">{{ statusLabel(r.status) }}</td>
                                     <td class="px-3 py-2">{{ r.processed_count }} / {{ r.matched_count }}</td>
                                     <td class="px-3 py-2 text-gray-500">{{ dateTime(r.started_at) }}</td>
                                 </tr>
-                                <tr v-if="!recentRuns.radar.length"><td colspan="4" class="px-3 py-4 text-gray-400">Запусков радара нет.</td></tr>
+                                <tr v-if="!recentRuns.radar.length"><td colspan="5" class="px-3 py-4 text-gray-400">Запусков радара нет.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -190,8 +192,10 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                             <thead class="bg-gray-50 text-left text-xs uppercase text-gray-500">
                                 <tr>
                                     <th class="px-3 py-2">Источник</th>
+                                    <th class="px-3 py-2">Триггер</th>
                                     <th class="px-3 py-2">Статус</th>
                                     <th class="px-3 py-2">Найдено/Новых</th>
+                                    <th class="px-3 py-2">Обновлено</th>
                                     <th class="px-3 py-2">Ошибок</th>
                                     <th class="px-3 py-2">Начало</th>
                                 </tr>
@@ -199,12 +203,14 @@ const totalFound = computed(() => props.dynamics.reduce((acc, d) => acc + d.coun
                             <tbody class="divide-y bg-white">
                                 <tr v-for="r in recentRuns.collect" :key="'cr' + r.id">
                                     <td class="px-3 py-2">{{ r.source?.name ?? '—' }}</td>
+                                    <td class="px-3 py-2 text-gray-600">{{ triggerLabel(r.trigger) }}</td>
                                     <td class="px-3 py-2" :class="statusClass(r.status)">{{ statusLabel(r.status) }}</td>
                                     <td class="px-3 py-2">{{ r.fetched_count }} / {{ r.new_count }}</td>
+                                    <td class="px-3 py-2 text-gray-600">{{ r.updated_count }}</td>
                                     <td class="px-3 py-2" :class="r.error_count > 0 ? 'font-semibold text-red-700' : 'text-gray-500'">{{ r.error_count }}</td>
                                     <td class="px-3 py-2 text-gray-500">{{ dateTime(r.started_at) }}</td>
                                 </tr>
-                                <tr v-if="!recentRuns.collect.length"><td colspan="5" class="px-3 py-4 text-gray-400">Сборов нет.</td></tr>
+                                <tr v-if="!recentRuns.collect.length"><td colspan="7" class="px-3 py-4 text-gray-400">Сборов нет.</td></tr>
                             </tbody>
                         </table>
                     </div>

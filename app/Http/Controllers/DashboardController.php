@@ -94,7 +94,7 @@ class DashboardController extends Controller
                 ->limit(self::RUNS_LIMIT)
                 ->get(),
             'collect' => SourceCollectRun::query()
-                ->select(['id', 'source_id', 'company_id', 'trigger', 'status', 'started_at', 'finished_at', 'fetched_count', 'new_count', 'error_count'])
+                ->select(['id', 'source_id', 'company_id', 'trigger', 'status', 'started_at', 'finished_at', 'fetched_count', 'new_count', 'updated_count', 'error_count'])
                 ->where('company_id', $companyId)
                 ->with('source:id,name')
                 ->latest('started_at')

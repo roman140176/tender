@@ -103,6 +103,7 @@ it('дашборд отдаёт все props company-scoped', function () {
             ->has('recentRuns.radar', 1)
             ->has('recentRuns.collect', 1)
             ->where('recentRuns.collect.0.error_count', 4)
+            ->where('recentRuns.collect.0.updated_count', 0)
             ->has('dynamics', 30) // окно заполнено нулями
         );
 });
