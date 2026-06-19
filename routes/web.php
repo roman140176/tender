@@ -6,6 +6,7 @@ use App\Http\Controllers\CompanySourceController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\KeywordController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RadarRunController;
 use App\Http\Controllers\RunController;
 use App\Http\Controllers\SearchProfileController;
 use App\Http\Controllers\TenderController;
@@ -32,6 +33,8 @@ Route::middleware(['auth', 'can:manage-company'])->group(function () {
         ->parameters(['profiles' => 'profile']);
     Route::post('profiles/{profile}/keywords', [KeywordController::class, 'store'])->name('profiles.keywords.store');
     Route::delete('keywords/{keyword}', [KeywordController::class, 'destroy'])->name('keywords.destroy');
+    Route::post('profiles/run-company', [RadarRunController::class, 'triggerCompany'])->name('profiles.run-company');
+    Route::post('profiles/{profile}/run', [RadarRunController::class, 'trigger'])->name('profiles.run');
     Route::post('profiles/{profile}/activate', [SearchProfileController::class, 'activate'])->name('profiles.activate');
     Route::post('profiles/{profile}/deactivate', [SearchProfileController::class, 'deactivate'])->name('profiles.deactivate');
     Route::get('sources', [CompanySourceController::class, 'index'])->name('sources.index');
