@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\KeywordType;
+use App\Enums\NotificationChannel;
 use App\Enums\RunTrigger;
 use App\Jobs\NotifyJob;
 use App\Models\Company;
@@ -68,8 +69,10 @@ it('диспатчит NotifyJob, когда score >= notification_threshold', f
     expect($match->score)->toBe(60);
 
     Queue::assertPushed(NotifyJob::class, function (NotifyJob $job) use ($match) {
-        return $job->tenderMatchId === $match->id;
+        return $job->tenderMatchId === $match->id && $job->channel === NotificationChannel::Max;
     });
+    // только MAX-канал настроен → ровно один джоб (никакого Email)
+    Queue::assertPushed(NotifyJob::class, 1);
 });
 
 it('НЕ диспатчит NotifyJob, когда у компании нет max_chat_id (хоть score >= threshold)', function () {
@@ -92,7 +95,89 @@ it('НЕ диспатчит NotifyJob, когда у компании нет max
 
     app(MatchProfileService::class)->run($profile->refresh(), RunTrigger::Import);
 
-    // матч создан со score 60 — значит no-dispatch именно из-за отсутствия chat_id, а не из-за скоринга
+    // матч создан со score 60 — значит no-dispatch именно из-за отсутствия каналов, а не из-за скоринга
+    expect(TenderMatch::withoutTenancy()->sole()->score)->toBe(60);
+    Queue::assertNotPushed(NotifyJob::class);
+});
+
+it('диспатчит Email-NotifyJob, когда задан notification_email и score >= threshold', function () {
+    $company = Company::factory()->create(['max_chat_id' => null, 'notification_email' => 'ops@example.test']);
+    $source = Source::factory()->create();
+    enableNotifySource($company, $source);
+
+    $profile = notifyProfile($company, [['краны мостовые', KeywordType::Exact]], threshold: 60);
+    $profile->update(['min_price' => '1000000', 'regions' => ['Москва']]);
+
+    Tender::factory()->create([
+        'source_id' => $source->id,
+        'title' => 'Поставка: краны мостовые опорные',
+        'price' => '2000000',
+        'region' => 'Москва',
+        'deadline_at' => now()->addDays(3),
+        'owner_company_id' => null,
+    ]);
+
+    app(MatchProfileService::class)->run($profile->refresh(), RunTrigger::Import);
+
+    $match = TenderMatch::withoutTenancy()->sole();
+    expect($match->score)->toBe(60);
+
+    // только Email-канал → ровно один джоб, канал Email
+    Queue::assertPushed(NotifyJob::class, 1);
+    Queue::assertPushed(NotifyJob::class, function (NotifyJob $job) use ($match) {
+        return $job->tenderMatchId === $match->id && $job->channel === NotificationChannel::Email;
+    });
+});
+
+it('диспатчит оба канала, когда заданы и max_chat_id, и notification_email', function () {
+    $company = Company::factory()->create(['max_chat_id' => '123', 'notification_email' => 'ops@example.test']);
+    $source = Source::factory()->create();
+    enableNotifySource($company, $source);
+
+    $profile = notifyProfile($company, [['краны мостовые', KeywordType::Exact]], threshold: 60);
+    $profile->update(['min_price' => '1000000', 'regions' => ['Москва']]);
+
+    Tender::factory()->create([
+        'source_id' => $source->id,
+        'title' => 'Поставка: краны мостовые опорные',
+        'price' => '2000000',
+        'region' => 'Москва',
+        'deadline_at' => now()->addDays(3),
+        'owner_company_id' => null,
+    ]);
+
+    app(MatchProfileService::class)->run($profile->refresh(), RunTrigger::Import);
+
+    $match = TenderMatch::withoutTenancy()->sole();
+
+    Queue::assertPushed(NotifyJob::class, 2);
+    Queue::assertPushed(NotifyJob::class, function (NotifyJob $job) use ($match) {
+        return $job->tenderMatchId === $match->id && $job->channel === NotificationChannel::Max;
+    });
+    Queue::assertPushed(NotifyJob::class, function (NotifyJob $job) use ($match) {
+        return $job->tenderMatchId === $match->id && $job->channel === NotificationChannel::Email;
+    });
+});
+
+it('НЕ диспатчит NotifyJob, когда не задан ни один канал (хоть score >= threshold)', function () {
+    $company = Company::factory()->create(['max_chat_id' => null, 'notification_email' => null]);
+    $source = Source::factory()->create();
+    enableNotifySource($company, $source);
+
+    $profile = notifyProfile($company, [['краны мостовые', KeywordType::Exact]], threshold: 60);
+    $profile->update(['min_price' => '1000000', 'regions' => ['Москва']]);
+
+    Tender::factory()->create([
+        'source_id' => $source->id,
+        'title' => 'Поставка: краны мостовые опорные',
+        'price' => '2000000',
+        'region' => 'Москва',
+        'deadline_at' => now()->addDays(3),
+        'owner_company_id' => null,
+    ]);
+
+    app(MatchProfileService::class)->run($profile->refresh(), RunTrigger::Import);
+
     expect(TenderMatch::withoutTenancy()->sole()->score)->toBe(60);
     Queue::assertNotPushed(NotifyJob::class);
 });

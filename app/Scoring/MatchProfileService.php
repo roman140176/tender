@@ -2,6 +2,7 @@
 
 namespace App\Scoring;
 
+use App\Enums\NotificationChannel;
 use App\Enums\RelevanceLevel;
 use App\Enums\RunStatus;
 use App\Enums\RunTrigger;
@@ -37,11 +38,12 @@ final class MatchProfileService
         $companyId = (int) $profile->company_id;
         $enabledSourceIds = $this->enabledSourceIds($companyId);
 
-        // chat_id компании резолвим ОДИН раз за прогон (не в чанке — без N+1).
+        // Компанию резолвим ОДИН раз за прогон (не в чанке — без N+1).
         // Company без BelongsToCompany-scope, поэтому find() работает без TenantContext.
-        // Если канал не настроен (компания не прошла онбординг) — NotifyJob не диспатчим:
-        // иначе джоб ушёл бы в no-chat_id-ветку и плодил Failed-логи на каждый матч каждый прогон.
-        $notifyChatId = Company::find($companyId)?->max_chat_id;
+        // Собираем список настроенных каналов: для каждого матча выше порога диспатчим
+        // отдельный NotifyJob на канал. Ненастроенные каналы пропускаем — иначе джоб
+        // ушёл бы в no-recipient-ветку и плодил Failed-логи на каждый матч каждый прогон.
+        $notifyChannels = $this->notifyChannels(Company::find($companyId));
 
         $run = RadarRun::create([
             'company_id' => $companyId,
@@ -62,7 +64,7 @@ final class MatchProfileService
 
         $this->candidates->build($profile, $keywords, $enabledSourceIds, $sinceUpdatedAt)
             ->chunkById(500, function (Collection $tenders) use (
-                &$processed, &$matched, &$errors, &$errorLines, $profile, $keywords, $weights, $companyId, $enabledSourceIds, $run, $notifyChatId
+                &$processed, &$matched, &$errors, &$errorLines, $profile, $keywords, $weights, $companyId, $enabledSourceIds, $run, $notifyChannels
             ): void {
                 foreach ($tenders as $tender) {
                     $processed++;
@@ -98,8 +100,10 @@ final class MatchProfileService
                         $match = $this->persist($companyId, (int) $tender->id, (int) $profile->id, (int) $run->id, $result);
                         $matched++;
 
-                        if (filled($notifyChatId) && $result->score >= (int) $profile->notification_threshold) {
-                            NotifyJob::dispatch($match->id);
+                        if ($notifyChannels !== [] && $result->score >= (int) $profile->notification_threshold) {
+                            foreach ($notifyChannels as $channel) {
+                                NotifyJob::dispatch($match->id, $channel);
+                            }
                         }
                     } catch (Throwable $e) {
                         $errors++;
@@ -118,6 +122,30 @@ final class MatchProfileService
         ]);
 
         return $run->refresh();
+    }
+
+    /**
+     * Каналы уведомлений, настроенные у компании. Для каждого матча выше порога
+     * NotifyJob диспатчится по разу на канал. Пустой список (или null-компания) →
+     * уведомления не диспатчатся вовсе.
+     *
+     * @return list<NotificationChannel>
+     */
+    private function notifyChannels(?Company $company): array
+    {
+        if ($company === null) {
+            return [];
+        }
+
+        $channels = [];
+        if (filled($company->max_chat_id)) {
+            $channels[] = NotificationChannel::Max;
+        }
+        if (filled($company->notification_email)) {
+            $channels[] = NotificationChannel::Email;
+        }
+
+        return $channels;
     }
 
     /** @return list<int> */
