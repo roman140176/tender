@@ -25,6 +25,10 @@ const form = useForm({
 const sendTestMessage = () => {
     router.post(route('company.test-message'), {}, { preserveScroll: true });
 };
+
+const sendTestEmail = () => {
+    router.post(route('company.test-email'), {}, { preserveScroll: true });
+};
 </script>
 
 <template>
@@ -89,6 +93,14 @@ const sendTestMessage = () => {
                             <InputLabel for="notification_email" value="Email для уведомлений" />
                             <TextInput id="notification_email" v-model="form.notification_email" type="email" class="mt-1 block w-full" />
                             <InputError class="mt-2" :message="form.errors.notification_email" />
+                            <button
+                                type="button"
+                                class="mt-2 text-sm text-indigo-600 hover:underline disabled:opacity-50"
+                                :disabled="!form.notification_email"
+                                @click="sendTestEmail"
+                            >
+                                Отправить тестовое письмо
+                            </button>
                         </div>
                         <div>
                             <InputLabel for="telegram_chat_id" value="Telegram chat_id" />

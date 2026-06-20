@@ -8,8 +8,7 @@ use App\Models\Company;
 use App\Models\NotificationLog;
 use App\Models\RadarRun;
 use App\Models\TenderMatch;
-use App\Notifications\MaxGateway;
-use App\Notifications\MaxNotificationPresenter;
+use App\Notifications\Channels\ChannelNotifierResolver;
 use App\Services\Notification\NotificationDecider;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -24,8 +23,10 @@ class NotifyJob implements ShouldQueue
 
     public int $timeout = 60;
 
-    public function __construct(public int $tenderMatchId)
-    {
+    public function __construct(
+        public int $tenderMatchId,
+        public NotificationChannel $channel,
+    ) {
         $this->onConnection('notifications')->onQueue('notifications');
         $this->afterCommit();
     }
@@ -36,7 +37,7 @@ class NotifyJob implements ShouldQueue
         return [10, 60, 300];
     }
 
-    public function handle(MaxGateway $gateway, NotificationDecider $decider): void
+    public function handle(ChannelNotifierResolver $resolver, NotificationDecider $decider): void
     {
         /** @var TenderMatch|null $match */
         $match = TenderMatch::withoutTenancy()
@@ -47,35 +48,35 @@ class NotifyJob implements ShouldQueue
             return; // матч удалён между диспатчем и обработкой
         }
 
+        $notifier = $resolver->for($this->channel);
+
         // TenderMatch не имеет связи company() — грузим компанию явно
         // (Company без BelongsToCompany-trait, scope не применяется).
         $company = Company::find($match->company_id);
-        $chatId = $company?->max_chat_id;
-        if ($chatId === null || $chatId === '') {
-            $this->logFailed($match, null, 'no chat_id');
+        $recipient = $company !== null ? $notifier->recipientFor($company) : null;
+        if ($recipient === null || $recipient === '') {
+            $this->logFailed($match, null, 'no recipient');
 
             return;
         }
 
-        if (! $decider->shouldNotify($match)) {
+        if (! $decider->shouldNotify($match, $this->channel)) {
             return; // антидубль §9 — без лога-дубля
         }
 
-        $text = MaxNotificationPresenter::render($match);
-
         try {
-            $gateway->sendMessage((string) $chatId, $text, []);
+            $notifier->send($recipient, $match);
         } catch (Throwable $e) {
-            $this->logFailed($match, (string) $chatId, $e->getMessage());
+            $this->logFailed($match, $recipient, $e->getMessage());
 
             throw $e; // проброс → ретрай джоба
         }
 
-        $this->logSent($match, (string) $chatId);
+        $this->logSent($match, $recipient);
         $this->incrementNotified($match);
     }
 
-    private function logSent(TenderMatch $match, string $chatId): void
+    private function logSent(TenderMatch $match, string $recipient): void
     {
         $tender = $match->tender;
 
@@ -83,8 +84,8 @@ class NotifyJob implements ShouldQueue
             'company_id' => $match->company_id,
             'tender_id' => $match->tender_id,
             'search_profile_id' => $match->search_profile_id,
-            'channel' => NotificationChannel::Max,
-            'recipient' => $chatId,
+            'channel' => $this->channel,
+            'recipient' => $recipient,
             'status' => NotificationStatus::Sent,
             'payload' => [
                 'price' => $tender->price,
@@ -96,14 +97,14 @@ class NotifyJob implements ShouldQueue
         ]);
     }
 
-    private function logFailed(TenderMatch $match, ?string $chatId, string $error): void
+    private function logFailed(TenderMatch $match, ?string $recipient, string $error): void
     {
         NotificationLog::create([
             'company_id' => $match->company_id,
             'tender_id' => $match->tender_id,
             'search_profile_id' => $match->search_profile_id,
-            'channel' => NotificationChannel::Max,
-            'recipient' => (string) ($chatId ?? ''),
+            'channel' => $this->channel,
+            'recipient' => (string) ($recipient ?? ''),
             'status' => NotificationStatus::Failed,
             'payload' => [],
             'error' => mb_substr($error, 0, 1000),

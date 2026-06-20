@@ -13,7 +13,8 @@ use App\Models\TenderMatch;
  * (профиль × закупка). Первый раз — слать. Повтор — только при явном ре-триггере:
  * цена ±≥10%, изменился дедлайн, source_status стал терминальным, score пересёк
  * notification_threshold снизу вверх. Сравнение — со снимком payload прошлого
- * sent-уведомления (пишет NotifyJob). Канал: MAX.
+ * sent-уведомления (пишет NotifyJob). Антидубль — per-канал: история MAX и Email
+ * независимы (sent-лог MAX не глушит Email и наоборот).
  */
 final class NotificationDecider
 {
@@ -22,7 +23,7 @@ final class NotificationDecider
     /** @var list<TenderSourceStatus> */
     private const TERMINAL = [TenderSourceStatus::Completed, TenderSourceStatus::Cancelled];
 
-    public function shouldNotify(TenderMatch $match): bool
+    public function shouldNotify(TenderMatch $match, NotificationChannel $channel): bool
     {
         // company_id избыточен (search_profile_id глобально уникален одной компании),
         // но явный предикат надёжнее/аудируемее и совпадает с паттерном фичи —
@@ -31,7 +32,7 @@ final class NotificationDecider
             ->where('company_id', $match->company_id)
             ->where('search_profile_id', $match->search_profile_id)
             ->where('tender_id', $match->tender_id)
-            ->where('channel', NotificationChannel::Max)
+            ->where('channel', $channel)
             ->where('status', NotificationStatus::Sent)
             ->latest('id')
             ->first();

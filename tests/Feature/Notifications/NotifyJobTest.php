@@ -14,6 +14,7 @@ use App\Models\RadarRun;
 use App\Models\SearchProfile;
 use App\Models\Tender;
 use App\Models\TenderMatch;
+use App\Notifications\Channels\ChannelNotifierResolver;
 use App\Notifications\FakeMaxGateway;
 use App\Notifications\MaxGateway;
 use App\Services\Notification\NotificationDecider;
@@ -63,10 +64,16 @@ function notifyFixture(?string $chatId = '111222', int $score = 75): TenderMatch
     ]);
 }
 
+/** Резолвер каналов из контейнера (MaxGateway уже подменён фейком в beforeEach). */
+function notifyResolver(): ChannelNotifierResolver
+{
+    return app(ChannelNotifierResolver::class);
+}
+
 it('happy-path: отправляет, пишет sent-лог и инкрементит notified_count', function () {
     $match = notifyFixture();
 
-    (new NotifyJob($match->id))->handle($this->fakeGateway, app(NotificationDecider::class));
+    (new NotifyJob($match->id, NotificationChannel::Max))->handle(notifyResolver(), app(NotificationDecider::class));
 
     expect($this->fakeGateway->sent)->toHaveCount(1)
         ->and($this->fakeGateway->sent[0]['chatId'])->toBe('111222')
@@ -88,13 +95,13 @@ it('happy-path: отправляет, пишет sent-лог и инкремен
 it('нет max_chat_id → failed-лог, без отправки, notified_count не растёт', function () {
     $match = notifyFixture(chatId: null);
 
-    (new NotifyJob($match->id))->handle($this->fakeGateway, app(NotificationDecider::class));
+    (new NotifyJob($match->id, NotificationChannel::Max))->handle(notifyResolver(), app(NotificationDecider::class));
 
     expect($this->fakeGateway->sent)->toBeEmpty();
 
     $log = NotificationLog::withoutTenancy()->sole();
     expect($log->status)->toBe(NotificationStatus::Failed)
-        ->and($log->error)->toContain('chat_id');
+        ->and($log->error)->toContain('no recipient');
 
     expect(RadarRun::withoutTenancy()->findOrFail($match->radar_run_id)->notified_count)->toBe(0);
 });
@@ -103,9 +110,9 @@ it('транспорт-ошибка → failed-лог и проброс искл
     $match = notifyFixture();
     $this->fakeGateway->throwOnSend = new RuntimeException('max 500');
 
-    $job = new NotifyJob($match->id);
+    $job = new NotifyJob($match->id, NotificationChannel::Max);
 
-    expect(fn () => $job->handle($this->fakeGateway, app(NotificationDecider::class)))
+    expect(fn () => $job->handle(notifyResolver(), app(NotificationDecider::class)))
         ->toThrow(RuntimeException::class, 'max 500');
 
     $log = NotificationLog::withoutTenancy()->sole();
@@ -119,12 +126,13 @@ it('антидубль: повтор без изменений → выход б
     $match = notifyFixture();
 
     // первый раз — отправит и залогирует sent
-    (new NotifyJob($match->id))->handle($this->fakeGateway, app(NotificationDecider::class));
+    (new NotifyJob($match->id, NotificationChannel::Max))->handle(notifyResolver(), app(NotificationDecider::class));
     expect(NotificationLog::withoutTenancy()->count())->toBe(1);
 
     // второй раз без изменений — Decider скажет «не слать»
     $fresh = new FakeMaxGateway;
-    (new NotifyJob($match->id))->handle($fresh, app(NotificationDecider::class));
+    app()->instance(MaxGateway::class, $fresh);
+    (new NotifyJob($match->id, NotificationChannel::Max))->handle(notifyResolver(), app(NotificationDecider::class));
 
     expect($fresh->sent)->toBeEmpty()
         ->and(NotificationLog::withoutTenancy()->count())->toBe(1); // новых логов нет
@@ -136,8 +144,8 @@ it('tenant-изоляция: каждый джоб шлёт только на ch
 
     // Запускаем ОБА джоба — доказываем, что каждый адресует свою компанию,
     // а не наоборот (chat_id берётся из company матча, не из чужой).
-    (new NotifyJob($matchA->id))->handle($this->fakeGateway, app(NotificationDecider::class));
-    (new NotifyJob($matchB->id))->handle($this->fakeGateway, app(NotificationDecider::class));
+    (new NotifyJob($matchA->id, NotificationChannel::Max))->handle(notifyResolver(), app(NotificationDecider::class));
+    (new NotifyJob($matchB->id, NotificationChannel::Max))->handle(notifyResolver(), app(NotificationDecider::class));
 
     expect($this->fakeGateway->sent)->toHaveCount(2)
         ->and($this->fakeGateway->messagesTo('AAA'))->toHaveCount(1)

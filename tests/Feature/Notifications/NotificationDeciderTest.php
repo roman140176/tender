@@ -72,7 +72,7 @@ function decider(): NotificationDecider
 
 it('первый раз (нет прошлого лога) → слать', function () {
     $match = deciderFixture();
-    expect(decider()->shouldNotify($match))->toBeTrue();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
 
 it('повтор без изменений → НЕ слать', function () {
@@ -84,7 +84,7 @@ it('повтор без изменений → НЕ слать', function () {
         'score' => 75,
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeFalse();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeFalse();
 });
 
 it('ре-триггер: цена выросла ≥10% → слать', function () {
@@ -96,7 +96,7 @@ it('ре-триггер: цена выросла ≥10% → слать', functio
         'score' => 75,
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeTrue();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
 
 it('ре-триггер: цена изменилась <10% → НЕ слать', function () {
@@ -108,7 +108,7 @@ it('ре-триггер: цена изменилась <10% → НЕ слать'
         'score' => 75,
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeFalse();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeFalse();
 });
 
 it('ре-триггер: изменился дедлайн → слать', function () {
@@ -120,7 +120,7 @@ it('ре-триггер: изменился дедлайн → слать', func
         'score' => 75,
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeTrue();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
 
 it('ре-триггер: source_status стал терминальным (cancelled) → слать', function () {
@@ -132,7 +132,7 @@ it('ре-триггер: source_status стал терминальным (cancel
         'score' => 75,
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeTrue();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
 
 it('source_status уже был терминальным (без перехода) → НЕ слать', function () {
@@ -144,7 +144,7 @@ it('source_status уже был терминальным (без переход�
         'score' => 75,
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeFalse();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeFalse();
 });
 
 it('ре-триггер: score пересёк порог снизу вверх → слать', function () {
@@ -156,7 +156,7 @@ it('ре-триггер: score пересёк порог снизу вверх �
         'score' => 55, // прошлый < порог
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeTrue();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
 
 it('игнорирует sent-лог с тем же профилем+закупкой, но ЧУЖИМ company_id → слать (как при отсутствии лога)', function () {
@@ -181,7 +181,7 @@ it('игнорирует sent-лог с тем же профилем+закуп�
     ]);
 
     // Для нашей компании прошлого лога нет → решатель должен вернуть true.
-    expect(decider()->shouldNotify($match))->toBeTrue();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
 
 it('score был выше порога и остался → НЕ слать (нет пересечения снизу)', function () {
@@ -193,5 +193,45 @@ it('score был выше порога и остался → НЕ слать (н
         'score' => 70, // уже был >= порога
     ]);
 
-    expect(decider()->shouldNotify($match))->toBeFalse();
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeFalse();
+});
+
+it('антидубль per-канал: sent-лог MAX не глушит Email (и наоборот)', function () {
+    $match = deciderFixture();
+
+    // прошлый sent-лог ТОЛЬКО по каналу MAX, без изменений матча
+    pastSentLog($match, [
+        'price' => '1000000.00',
+        'deadline_at' => Carbon::parse('2026-07-01 18:00:00')->toIso8601String(),
+        'source_status' => 'active',
+        'score' => 75,
+    ]);
+
+    // MAX — дубль (своя история есть, изменений нет) → не слать
+    expect(decider()->shouldNotify($match, NotificationChannel::Max))->toBeFalse()
+        // Email — своей истории нет → слать (история MAX не влияет на Email)
+        ->and(decider()->shouldNotify($match, NotificationChannel::Email))->toBeTrue();
+});
+
+it('антидубль per-канал: sent-лог Email не глушит MAX', function () {
+    $match = deciderFixture();
+
+    NotificationLog::create([
+        'company_id' => $match->company_id,
+        'tender_id' => $match->tender_id,
+        'search_profile_id' => $match->search_profile_id,
+        'channel' => NotificationChannel::Email,
+        'recipient' => 'ops@example.test',
+        'status' => NotificationStatus::Sent,
+        'payload' => [
+            'price' => '1000000.00',
+            'deadline_at' => Carbon::parse('2026-07-01 18:00:00')->toIso8601String(),
+            'source_status' => 'active',
+            'score' => 75,
+        ],
+        'sent_at' => now(),
+    ]);
+
+    expect(decider()->shouldNotify($match, NotificationChannel::Email))->toBeFalse()
+        ->and(decider()->shouldNotify($match, NotificationChannel::Max))->toBeTrue();
 });
