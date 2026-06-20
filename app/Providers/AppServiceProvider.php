@@ -36,6 +36,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
+        // Деактивированный пользователь не проходит ни один гейт (включая суперадмина);
+        // null — передать управление обычной логике гейтов.
+        Gate::before(fn (User $user): ?bool => $user->is_active === true ? null : false);
+
         Gate::define('manage-company', fn (User $user): bool => $user->role === UserRole::Admin && $user->company_id !== null);
 
         Gate::define('view-tenders', fn (User $user): bool => $user->company_id !== null);
