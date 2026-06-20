@@ -14,6 +14,7 @@ use Illuminate\Notifications\Notifiable;
 /**
  * @property UserRole $role
  * @property int|null $company_id
+ * @property bool $is_active
  */
 class User extends Authenticatable
 {
