@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Adapters\Eis\EisGateway;
 use App\Adapters\Eis\SoapEisGateway;
+use App\Ai\Contracts\LlmClient;
+use App\Ai\LlmClientResolver;
 use App\Enums\UserRole;
 use App\Models\User;
 use App\Notifications\HttpMaxGateway;
@@ -27,6 +29,11 @@ class AppServiceProvider extends ServiceProvider
 
         // MAX-транспорт: HttpMaxGateway — реальный MAX Bot API (A7)
         $this->app->bind(MaxGateway::class, HttpMaxGateway::class);
+
+        // AI-слой: резолвер тир→провайдер + дефолтный LlmClient (cheap-тир).
+        // Сервисы саммари/скоринга инжектят LlmClient; премиум-КП — резолвер с тиром strong.
+        $this->app->singleton(LlmClientResolver::class);
+        $this->app->bind(LlmClient::class, fn ($app) => $app->make(LlmClientResolver::class)->default());
     }
 
     /**
