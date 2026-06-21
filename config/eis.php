@@ -42,4 +42,10 @@ return [
         ],
     ],
     'schedule_cron' => '0 */4 * * *',
+
+    // Срок годности токена getDocsIP (выпускается через КЭП, см. eis-spike/README).
+    // Без него протухание молча убьёт пайплайн. eis:token-check шлёт алерт заранее.
+    'token_expires_at' => env('EIS_TOKEN_EXPIRES_AT'), // YYYY-MM-DD
+    'token_alert_days' => (int) env('EIS_TOKEN_ALERT_DAYS', 30),
+    'ops_max_chat_id' => env('EIS_OPS_MAX_CHAT_ID'), // MAX-чат для операционных алертов
 ];
