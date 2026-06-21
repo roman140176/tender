@@ -30,6 +30,16 @@ return [
             'base' => env('QWEN_API_BASE', 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1'),
             'timeout' => (int) env('AI_TIMEOUT', 60),
         ],
+
+        // YandexGPT (Yandex Cloud) — RU-native через OpenAI-совместимый эндпоинт.
+        // Авторизация статичным Api-Key, модель оборачивается в gpt://<folder>/<model>.
+        // Чтобы сделать дефолтом: AI_CHEAP_PROVIDER=yandexgpt AI_CHEAP_MODEL=yandexgpt-lite.
+        'yandexgpt' => [
+            'key' => env('YANDEX_API_KEY'),
+            'folder' => env('YANDEX_FOLDER_ID'),
+            'base' => env('YANDEX_API_BASE', 'https://llm.api.cloud.yandex.net/v1'),
+            'timeout' => (int) env('AI_TIMEOUT', 60),
+        ],
     ],
 
     // Месячный лимит токенов на компанию (0 = безлимит). Enforcement — follow-up.

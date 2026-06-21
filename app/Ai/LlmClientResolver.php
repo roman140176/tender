@@ -5,6 +5,7 @@ namespace App\Ai;
 use App\Ai\Contracts\LlmClient;
 use App\Ai\Providers\NullLlmClient;
 use App\Ai\Providers\QwenLlmClient;
+use App\Ai\Providers\YandexGptLlmClient;
 use InvalidArgumentException;
 
 /**
@@ -37,6 +38,13 @@ final class LlmClientResolver
         return match ($providerName) {
             'qwen' => new QwenLlmClient(
                 apiKey: (string) ($providerCfg['key'] ?? ''),
+                baseUrl: (string) ($providerCfg['base'] ?? ''),
+                model: $model,
+                timeout: (int) ($providerCfg['timeout'] ?? 60),
+            ),
+            'yandexgpt' => new YandexGptLlmClient(
+                apiKey: (string) ($providerCfg['key'] ?? ''),
+                folder: (string) ($providerCfg['folder'] ?? ''),
                 baseUrl: (string) ($providerCfg['base'] ?? ''),
                 model: $model,
                 timeout: (int) ($providerCfg['timeout'] ?? 60),
