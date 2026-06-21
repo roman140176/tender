@@ -4,6 +4,7 @@ use App\Ai\Exceptions\AiDisabledException;
 use App\Ai\Exceptions\LlmTransportException;
 use App\Ai\LlmRequest;
 use App\Ai\Providers\QwenLlmClient;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 
 function qwenClient(string $key = 'sk-test', string $model = 'qwen-turbo'): QwenLlmClient
@@ -71,7 +72,7 @@ it('200 без choices → пустой content, но usage учтён (без �
 });
 
 it('ConnectionException (таймаут/обрыв ГОСТ-TLS) → LlmTransportException', function () {
-    Http::fake(fn () => throw new Illuminate\Http\Client\ConnectionException('timeout'));
+    Http::fake(fn () => throw new ConnectionException('timeout'));
 
     qwenClient()->complete(new LlmRequest(system: 's', user: 'u'));
 })->throws(LlmTransportException::class);

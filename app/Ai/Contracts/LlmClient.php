@@ -2,6 +2,8 @@
 
 namespace App\Ai\Contracts;
 
+use App\Ai\Exceptions\AiDisabledException;
+use App\Ai\Exceptions\LlmTransportException;
 use App\Ai\LlmRequest;
 use App\Ai\LlmResponse;
 
@@ -14,8 +16,8 @@ use App\Ai\LlmResponse;
 interface LlmClient
 {
     /**
-     * @throws \App\Ai\Exceptions\AiDisabledException если AI не сконфигурирован
-     * @throws \App\Ai\Exceptions\LlmTransportException при сетевой/HTTP-ошибке провайдера
+     * @throws AiDisabledException если AI не сконфигурирован
+     * @throws LlmTransportException при сетевой/HTTP-ошибке провайдера
      */
     public function complete(LlmRequest $request): LlmResponse;
 }

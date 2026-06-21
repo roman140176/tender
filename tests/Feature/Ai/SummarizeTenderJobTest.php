@@ -7,6 +7,7 @@ use App\Models\AiUsage;
 use App\Models\Company;
 use App\Models\Tender;
 use App\Services\Ai\TenderSummarizer;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Support\Facades\Bus;
 
 function jobSummarizer(FakeLlmClient $fake): TenderSummarizer
@@ -32,7 +33,7 @@ it('джоб создаёт саммари, повторный запуск пр
 it('джоб уникален по tenderId (ShouldBeUnique) — защита от двойного диспатча', function () {
     $job = new SummarizeTenderJob(42, 7);
 
-    expect($job)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldBeUnique::class)
+    expect($job)->toBeInstanceOf(ShouldBeUnique::class)
         ->and($job->uniqueId())->toBe('42');
 });
 

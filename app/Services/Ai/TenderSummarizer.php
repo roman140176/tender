@@ -112,7 +112,6 @@ final class TenderSummarizer
     }
 
     /**
-     * @param  mixed  $value
      * @return list<string>
      */
     private function stringList(mixed $value): array

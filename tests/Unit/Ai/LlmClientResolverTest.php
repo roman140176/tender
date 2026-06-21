@@ -4,6 +4,7 @@ use App\Ai\LlmClientResolver;
 use App\Ai\LlmRequest;
 use App\Ai\Providers\NullLlmClient;
 use App\Ai\Providers\QwenLlmClient;
+use App\Ai\Providers\YandexGptLlmClient;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function () {
@@ -40,6 +41,19 @@ it('при ai.enabled=false всегда отдаёт NullLlmClient', function (
 
     expect((new LlmClientResolver)->for('cheap'))->toBeInstanceOf(NullLlmClient::class)
         ->and((new LlmClientResolver)->for('strong'))->toBeInstanceOf(NullLlmClient::class);
+});
+
+it('резолвит yandexgpt: оборачивает modelUri каталогом и шлёт Api-Key', function () {
+    config()->set('ai.tiers.cheap', ['provider' => 'yandexgpt', 'model' => 'yandexgpt-lite']);
+    config()->set('ai.providers.yandexgpt', ['key' => 'ya-x', 'folder' => 'b1gf', 'base' => 'https://example.test/v1', 'timeout' => 30]);
+    Http::fake(['*' => Http::response(['choices' => [['message' => ['content' => 'x']]], 'usage' => []])]);
+
+    $client = (new LlmClientResolver)->for('cheap');
+    expect($client)->toBeInstanceOf(YandexGptLlmClient::class);
+
+    $client->complete(new LlmRequest(system: 's', user: 'u'));
+    Http::assertSent(fn ($req) => $req->data()['model'] === 'gpt://b1gf/yandexgpt-lite'
+        && $req->hasHeader('Authorization', 'Api-Key ya-x'));
 });
 
 it('неизвестный тир → InvalidArgumentException', function () {
